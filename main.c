@@ -84,7 +84,7 @@ int main() {
 	setlocale(LC_ALL, ".UTF-8");
 	int current_day = 1, current_hour = 8;
 
-	int inventory_array[10] = { INVENTORY_empty, INVENTORY_empty, INVENTORY_axe, INVENTORY_wood, INVENTORY_wood, \
+	enum INVENTORY inventory_array[10] = { INVENTORY_empty, INVENTORY_empty, INVENTORY_axe, INVENTORY_wood, INVENTORY_wood, \
 						INVENTORY_flower, INVENTORY_empty, INVENTORY_seed, INVENTORY_empty, INVENTORY_wood };
 
 	menuPrint();
@@ -109,20 +109,39 @@ int main() {
 
 		case MENU_inventory: 
 			for (int i = 0; i < sizeof(inventory_array)/ sizeof(*inventory_array); i++)
-				printf("Слот [%d]: %s\n", i+1, INVENTORY_NAMES[inventory_array[i]]);
+				printf("Слот [%d]: %s\n", i, INVENTORY_NAMES[inventory_array[i]]);
 			break;
 
 
 		case MENU_put:
 			printf("Куда положить?\n");
-			int slot = IntInputCheck(0, 9, "Нет такого слота");
+			int slot_put = IntInputCheck(0, 9, "Нет такого слота");
 			printf("Что положить?\n");
 			int new_item = IntInputCheck(1, 9, "Нет такого предмета");
-			inventory_array[slot] = INVENTORY_idMatch(new_item);
-			printf("Положили %s в слот %d\n", INVENTORY_NAMES[inventory_array[slot]], slot);
+			inventory_array[slot_put] = INVENTORY_idMatch(new_item);
+			printf("Положили %s в слот %d\n", INVENTORY_NAMES[inventory_array[slot_put]], slot_put);
 			break;
-		case MENU_throw: printf("Тут будет функция throw\n"); break;
-		case MENU_weight:printf("Тут будет функция weight\n"); break;
+
+		case MENU_throw: 
+			printf("С какого слота выбросить?\n");
+			int slot_throw = IntInputCheck(0, 9, "Нет такого слота");
+			if (inventory_array[slot_throw] != INVENTORY_empty) {
+				printf("Выбросили %s из слота %d\n", INVENTORY_NAMES[inventory_array[slot_throw]], slot_throw);
+				inventory_array[slot_throw] = INVENTORY_empty;
+			}
+			else printf("Слот и так пустой.\n");
+			break;
+
+		case MENU_weight: 
+			printf("Введите ID предмета\n");
+			int weight_check = IntInputCheck(1, 9, "Нет такого предмета"); 
+			printf("В этих слотах ID больше: ");
+			for (int i = 0; i < sizeof(inventory_array) / sizeof(*inventory_array); i++) {
+				if (weight_check < inventory_array[i])
+					printf("[%d]", i);
+			}
+			printf("\n");
+			break;
 		}
 	}
 
