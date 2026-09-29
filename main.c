@@ -3,6 +3,7 @@
 #include <locale.h>
 #pragma warning(disable: 4996)
 
+#define INVENTORY_SIZE 10
 
 enum MENU {
 	MENU_exit = 0,
@@ -27,7 +28,7 @@ enum INVENTORY {
 	INVENTORY_axe = 9
 };
 
-const char* INVENTORY_NAMES[10] = {
+const char* INVENTORY_NAMES[INVENTORY_SIZE] = {
 	[INVENTORY_empty] = "Пусто",
 	[INVENTORY_wood] = "Древесина",
 	[INVENTORY_stone] = "Камень",
@@ -74,6 +75,7 @@ int IntInputCheck(int low_limit, int up_limit, const char *error_message) {
 
 
 
+
 void menuPrint() {
 	printf("\033[2J\033[H"); // очищение экрана
 	printf("[%d] Выход \n[%d] Посмотреть на часы\n[%d] Поработать\n[%d] Посмотреть инвентарь\n[%d] Положить в инвентарь\n[%d] Выбросить из инвентаря\n[%d] Поиск тяжестей\n", \
@@ -84,8 +86,8 @@ int main() {
 	setlocale(LC_ALL, ".UTF-8");
 	int current_day = 1, current_hour = 8;
 
-	enum INVENTORY inventory_array[10] = { INVENTORY_empty, INVENTORY_empty, INVENTORY_axe, INVENTORY_wood, INVENTORY_wood, \
-						INVENTORY_flower, INVENTORY_empty, INVENTORY_seed, INVENTORY_empty, INVENTORY_wood };
+	enum INVENTORY inventory_array[INVENTORY_SIZE] = { INVENTORY_empty, INVENTORY_empty, INVENTORY_axe, INVENTORY_wood, INVENTORY_wood, \
+													INVENTORY_flower, INVENTORY_empty, INVENTORY_seed, INVENTORY_empty, INVENTORY_wood };
 
 	menuPrint();
 	while (1) {
@@ -138,7 +140,7 @@ int main() {
 			printf("В этих слотах ID больше: ");
 			for (int i = 0; i < sizeof(inventory_array) / sizeof(*inventory_array); i++) {
 				if (weight_check < inventory_array[i])
-					printf("[%d]", i);
+					printf("[%d] ", i);
 			}
 			printf("\n");
 			break;
