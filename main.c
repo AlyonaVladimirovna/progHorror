@@ -4,6 +4,8 @@
 #pragma warning(disable: 4996)
 
 #define INVENTORY_SIZE 10
+#define MAX_ITEMS 10
+#define MAX_NAME_LEN 15
 
 enum MENU {
 	MENU_exit = 0,
@@ -53,7 +55,7 @@ int INVENTORY_idMatch(int input) {
 		case INVENTORY_wheat: return INVENTORY_wheat;
 		case INVENTORY_showel: return INVENTORY_showel;
 		case INVENTORY_axe: return INVENTORY_axe;
-		default: return -1;
+		default: return INVENTORY_empty;
 
 	}
 };
@@ -73,23 +75,38 @@ int IntInputCheck(int low_limit, int up_limit, const char *error_message) {
 	};
 };
 
+void NameInput(char* character_name) {
+	printf("Введите имя: ");
+
+	while (1) {
+		if (scanf_s("%32s", character_name, 33) != 1) {
+			printf("Неверный ввод\n");
+			int c;
+			while ((c = getchar()) != '\n' && c != EOF);
+		}
+		else break;
+	}
+};
 
 
-
-void menuPrint() {
-	printf("\033[2J\033[H"); // очищение экрана
-	printf("[%d] Выход \n[%d] Посмотреть на часы\n[%d] Поработать\n[%d] Посмотреть инвентарь\n[%d] Положить в инвентарь\n[%d] Выбросить из инвентаря\n[%d] Поиск тяжестей\n", \
-		MENU_exit, MENU_clock, MENU_work, MENU_inventory, MENU_put, MENU_throw, MENU_weight);
+void menuPrint(char* name) {
+	//printf("\033[2J\033[H"); // очищение экрана
+	printf("Привет, %s\n[%d] Выход \n[%d] Посмотреть на часы\n[%d] Поработать\n[%d] Посмотреть инвентарь\n[%d] Положить в инвентарь\n[%d] Выбросить из инвентаря\n[%d] Поиск тяжестей\n", \
+		name, MENU_exit, MENU_clock, MENU_work, MENU_inventory, MENU_put, MENU_throw, MENU_weight);
 };
 
 int main() {
 	setlocale(LC_ALL, ".UTF-8");
 	int current_day = 1, current_hour = 8;
-
 	enum INVENTORY inventory_array[INVENTORY_SIZE] = { INVENTORY_empty, INVENTORY_empty, INVENTORY_axe, INVENTORY_wood, INVENTORY_wood, \
 													INVENTORY_flower, INVENTORY_empty, INVENTORY_seed, INVENTORY_empty, INVENTORY_wood };
 
-	menuPrint();
+	char character_name[33];
+	NameInput(character_name);
+	char item_names[MAX_ITEMS][MAX_NAME_LEN];
+
+
+	menuPrint(character_name);
 	while (1) {
 		printf("Выберите пункт меню\n");
 		switch (IntInputCheck(0, 6, "Неверный ввод")) {
