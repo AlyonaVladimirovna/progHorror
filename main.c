@@ -1,11 +1,12 @@
 //Лаба 2, Вариант 6
 #include <stdio.h>
 #include <locale.h>
+#include <string.h>
 #pragma warning(disable: 4996)
 
 #define INVENTORY_SIZE 10
 #define MAX_ITEMS 10
-#define MAX_NAME_LEN 15
+#define MAX_NAME_LEN 32
 
 enum MENU {
 	MENU_exit = 0,
@@ -30,7 +31,7 @@ enum INVENTORY {
 	INVENTORY_axe = 9
 };
 
-const char* INVENTORY_NAMES[INVENTORY_SIZE] = {
+const char* COMMON_INVENTORY_NAMES[INVENTORY_SIZE] = {
 	[INVENTORY_empty] = "Пусто",
 	[INVENTORY_wood] = "Древесина",
 	[INVENTORY_stone] = "Камень",
@@ -101,10 +102,28 @@ int main() {
 	enum INVENTORY inventory_array[INVENTORY_SIZE] = { INVENTORY_empty, INVENTORY_empty, INVENTORY_axe, INVENTORY_wood, INVENTORY_wood, \
 													INVENTORY_flower, INVENTORY_empty, INVENTORY_seed, INVENTORY_empty, INVENTORY_wood };
 
-	char character_name[33];
-	NameInput(character_name);
 	char item_names[MAX_ITEMS][MAX_NAME_LEN];
 
+	FILE* itemlist = fopen("files/items.txt", "r");
+	if (itemlist == NULL) {
+		printf("Не удалось открыть files/items.txt, взяты названия по умолчанию\n");
+		for (int i = 0; i < MAX_ITEMS; i++) {
+			strcpy_s(item_names[i], MAX_NAME_LEN, COMMON_INVENTORY_NAMES[i]);
+		};
+	}
+	else {
+		char file_line[MAX_NAME_LEN];
+		for (int i = 0; i < MAX_ITEMS; i++) {
+			if (fgets(file_line, sizeof(file_line), itemlist) != NULL)
+				sscanf_s(file_line, "%*d %32[^%n\n]", item_names[i], sizeof(item_names[i]));
+		};
+		fclose(itemlist);
+	}
+	
+
+
+	char character_name[33];
+	NameInput(character_name);
 
 	menuPrint(character_name);
 	while (1) {
@@ -128,7 +147,7 @@ int main() {
 
 		case MENU_inventory: 
 			for (int i = 0; i < sizeof(inventory_array)/ sizeof(*inventory_array); i++)
-				printf("Слот [%d]: %s\n", i, INVENTORY_NAMES[inventory_array[i]]);
+				printf("Слот [%d]: %s (%d)\n", i, item_names[inventory_array[i]], inventory_array[i]);
 			break;
 
 
@@ -138,14 +157,14 @@ int main() {
 			printf("Что положить?\n");
 			int new_item = IntInputCheck(1, 9, "Нет такого предмета");
 			inventory_array[slot_put] = INVENTORY_idMatch(new_item);
-			printf("Положили %s в слот %d\n", INVENTORY_NAMES[inventory_array[slot_put]], slot_put);
+			printf("Положили %s в слот %d\n", item_names[inventory_array[slot_put]], slot_put);
 			break;
 
 		case MENU_throw: 
 			printf("С какого слота выбросить?\n");
 			int slot_throw = IntInputCheck(0, 9, "Нет такого слота");
 			if (inventory_array[slot_throw] != INVENTORY_empty) {
-				printf("Выбросили %s из слота %d\n", INVENTORY_NAMES[inventory_array[slot_throw]], slot_throw);
+				printf("Выбросили %s из слота %d\n", item_names[inventory_array[slot_throw]], slot_throw);
 				inventory_array[slot_throw] = INVENTORY_empty;
 			}
 			else printf("Слот и так пустой.\n");
