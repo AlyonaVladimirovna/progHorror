@@ -4,7 +4,6 @@
 #include <string.h>
 #pragma warning(disable: 4996)
 
-#define INVENTORY_SIZE 10
 #define MAX_ITEMS 10
 #define MAX_NAME_LEN 32
 
@@ -31,7 +30,7 @@ enum INVENTORY {
 	INVENTORY_axe = 9
 };
 
-const char* COMMON_INVENTORY_NAMES[INVENTORY_SIZE] = {
+const char* COMMON_INVENTORY_NAMES[MAX_ITEMS] = {
 	[INVENTORY_empty] = "Пусто",
 	[INVENTORY_wood] = "Древесина",
 	[INVENTORY_stone] = "Камень",
@@ -76,6 +75,7 @@ int IntInputCheck(int low_limit, int up_limit, const char *error_message) {
 	};
 };
 
+//Тех функции
 void NameInput(char* character_name) {
 	printf("Введите имя: ");
 
@@ -89,6 +89,24 @@ void NameInput(char* character_name) {
 	}
 };
 
+void read_item_names(char item_names_buffer[MAX_ITEMS][MAX_NAME_LEN]) {
+	FILE* itemlist = fopen("files/items.txt", "r");
+	if (itemlist == NULL) {
+		printf("Не удалось открыть files/items.txt, взяты названия по умолчанию\n");
+		for (int i = 0; i < MAX_ITEMS; i++) {
+			strcpy_s(item_names_buffer[i], MAX_NAME_LEN, COMMON_INVENTORY_NAMES[i]);
+		};
+	}
+	else {
+		char file_line[MAX_NAME_LEN];
+		for (int i = 0; i < MAX_ITEMS; i++) {
+			if (fgets(file_line, sizeof(file_line), itemlist) != NULL)
+				sscanf_s(file_line, "%*d %32[^%n\n]", item_names_buffer[i], sizeof(item_names_buffer[i]));
+		};
+		fclose(itemlist);
+	}
+
+}
 
 void menuPrint(char* name) {
 	//printf("\033[2J\033[H"); // очищение экрана
@@ -96,32 +114,60 @@ void menuPrint(char* name) {
 		name, MENU_exit, MENU_clock, MENU_work, MENU_inventory, MENU_put, MENU_throw, MENU_weight);
 };
 
+
+//Ниже функции меню
+
+void calculating_workHours(int work_hours, int* current_hour, int* current_day) {
+	if (work_hours + *current_hour >= 24) {
+		*current_hour = (*current_hour + work_hours) % 24;
+		*current_day = *current_day + 1;
+	}
+	else *current_hour = (*current_hour + work_hours);
+}
+
+
+void inventory_put(enum INVENTORY* inventory_array, char item_names[MAX_ITEMS][MAX_NAME_LEN]) {
+	printf("Куда положить?\n");
+	int slot_put = IntInputCheck(0, 9, "Нет такого слота");
+	printf("Что положить?\n");
+	int new_item = IntInputCheck(1, 9, "Нет такого предмета");
+	inventory_array[slot_put] = INVENTORY_idMatch(new_item);
+	printf("Положили %s в слот %d\n", item_names[inventory_array[slot_put]], slot_put);
+}
+
+void inventory_throw(enum INVENTORY* inventory_array, char item_names[MAX_ITEMS][MAX_NAME_LEN]) {
+	printf("С какого слота выбросить?\n");
+	int slot_throw = IntInputCheck(0, 9, "Нет такого слота");
+	if (inventory_array[slot_throw] != INVENTORY_empty) {
+		printf("Выбросили %s из слота %d\n", item_names[inventory_array[slot_throw]], slot_throw);
+		inventory_array[slot_throw] = INVENTORY_empty;
+	}
+	else printf("Слот и так пустой.\n");
+}
+
+
+void inventory_weight(enum INVENTORY* inventory_array) {
+	printf("Введите ID предмета\n");
+	int weight_check = IntInputCheck(1, 9, "Нет такого предмета");
+	printf("В этих слотах ID больше: ");
+	for (int i = 0; i < MAX_ITEMS; i++) {
+		if (weight_check < inventory_array[i])
+			printf("[%d] ", i);
+	}
+	printf("\n");
+}
+
+
+
 int main() {
 	setlocale(LC_ALL, ".UTF-8");
 	int current_day = 1, current_hour = 8;
-	enum INVENTORY inventory_array[INVENTORY_SIZE] = { INVENTORY_empty, INVENTORY_empty, INVENTORY_axe, INVENTORY_wood, INVENTORY_wood, \
+	enum INVENTORY inventory_array[MAX_ITEMS] = { INVENTORY_empty, INVENTORY_empty, INVENTORY_axe, INVENTORY_wood, INVENTORY_wood, \
 													INVENTORY_flower, INVENTORY_empty, INVENTORY_seed, INVENTORY_empty, INVENTORY_wood };
 
 	char item_names[MAX_ITEMS][MAX_NAME_LEN];
-
-	FILE* itemlist = fopen("files/items.txt", "r");
-	if (itemlist == NULL) {
-		printf("Не удалось открыть files/items.txt, взяты названия по умолчанию\n");
-		for (int i = 0; i < MAX_ITEMS; i++) {
-			strcpy_s(item_names[i], MAX_NAME_LEN, COMMON_INVENTORY_NAMES[i]);
-		};
-	}
-	else {
-		char file_line[MAX_NAME_LEN];
-		for (int i = 0; i < MAX_ITEMS; i++) {
-			if (fgets(file_line, sizeof(file_line), itemlist) != NULL)
-				sscanf_s(file_line, "%*d %32[^%n\n]", item_names[i], sizeof(item_names[i]));
-		};
-		fclose(itemlist);
-	}
+	read_item_names(item_names);
 	
-
-
 	char character_name[33];
 	NameInput(character_name);
 
@@ -137,48 +183,26 @@ int main() {
 		case MENU_work: 
 			printf("Сколько работать?\n");
 			int work_hours = IntInputCheck(0,24, "Неверный ввод, нельзя столько работать");
-			if (work_hours + current_hour >= 24) {
-				current_hour = (current_hour + work_hours) % 24;
-				current_day++;
-			}
-			else current_hour = (current_hour + work_hours);
+			calculating_workHours(work_hours, &current_hour, &current_day);
 			printf("Текущее время: День %d, %d:00\n", current_day, current_hour);
 			break;
 
 		case MENU_inventory: 
-			for (int i = 0; i < sizeof(inventory_array)/ sizeof(*inventory_array); i++)
+			for (int i = 0; i < MAX_ITEMS; i++)
 				printf("Слот [%d]: %s (%d)\n", i, item_names[inventory_array[i]], inventory_array[i]);
 			break;
 
 
 		case MENU_put:
-			printf("Куда положить?\n");
-			int slot_put = IntInputCheck(0, 9, "Нет такого слота");
-			printf("Что положить?\n");
-			int new_item = IntInputCheck(1, 9, "Нет такого предмета");
-			inventory_array[slot_put] = INVENTORY_idMatch(new_item);
-			printf("Положили %s в слот %d\n", item_names[inventory_array[slot_put]], slot_put);
+			inventory_put(inventory_array, item_names);
 			break;
 
 		case MENU_throw: 
-			printf("С какого слота выбросить?\n");
-			int slot_throw = IntInputCheck(0, 9, "Нет такого слота");
-			if (inventory_array[slot_throw] != INVENTORY_empty) {
-				printf("Выбросили %s из слота %d\n", item_names[inventory_array[slot_throw]], slot_throw);
-				inventory_array[slot_throw] = INVENTORY_empty;
-			}
-			else printf("Слот и так пустой.\n");
+			inventory_throw(inventory_array, item_names);
 			break;
 
 		case MENU_weight: 
-			printf("Введите ID предмета\n");
-			int weight_check = IntInputCheck(1, 9, "Нет такого предмета"); 
-			printf("В этих слотах ID больше: ");
-			for (int i = 0; i < sizeof(inventory_array) / sizeof(*inventory_array); i++) {
-				if (weight_check < inventory_array[i])
-					printf("[%d] ", i);
-			}
-			printf("\n");
+			inventory_weight(inventory_array);
 			break;
 		}
 	}
