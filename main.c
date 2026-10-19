@@ -1,12 +1,16 @@
-//Лаба 2, Вариант 6
+//Лаба 3, Вариант 5
 #include <stdio.h>
 #include <locale.h>
 #include <string.h>
+#include <Windows.h>
 #pragma warning(disable: 4996)
 
+//Максимальное количество предметов
 #define MAX_ITEMS 10
+//Максимальная длина названия предмета
 #define MAX_NAME_LEN 32
 
+//ID меню
 enum MENU {
 	MENU_exit = 0,
 	MENU_clock = 1,
@@ -14,9 +18,13 @@ enum MENU {
 	MENU_inventory = 3,
 	MENU_put = 4,
 	MENU_throw = 5,
-	MENU_weight = 6
+	MENU_weight = 6,
+	MENU_search = 7,
+	MENU_diary = 8,
+	MENU_logs = 9
 };
 
+//ID предметов 
 enum INVENTORY {
 	INVENTORY_empty = 0,
 	INVENTORY_wood = 1,
@@ -30,6 +38,7 @@ enum INVENTORY {
 	INVENTORY_axe = 9
 };
 
+//Массив стандартных названий
 const char* COMMON_INVENTORY_NAMES[MAX_ITEMS] = {
 	[INVENTORY_empty] = "Пусто",
 	[INVENTORY_wood] = "Древесина",
@@ -43,6 +52,12 @@ const char* COMMON_INVENTORY_NAMES[MAX_ITEMS] = {
 	[INVENTORY_axe] = "Топор"
 };
 
+typedef struct {
+	enum INVENTORY id;
+	const char* name;
+} InventoryItems;
+
+//Функция для приведения id к типу enum INVENTORY
 int INVENTORY_idMatch(int input) {
 	switch (input) {
 		case INVENTORY_empty: return INVENTORY_empty;
@@ -60,6 +75,7 @@ int INVENTORY_idMatch(int input) {
 	}
 };
 
+//Ввод чисел (да он понятия не имеет как работать с текстом)
 int IntInputCheck(int low_limit, int up_limit, const char *error_message) {
 	int input = 0;
 	int error_flag = 0;
@@ -71,24 +87,38 @@ int IntInputCheck(int low_limit, int up_limit, const char *error_message) {
 			int c;
 			while ((c = getchar()) != '\n' && c != EOF);
 		}
-		else return input;
+		else {
+			int c;
+			while ((c = getchar()) != '\n' && c != EOF);
+			return input;
+		}
 	};
 };
 
-//Тех функции
-void NameInput(char* character_name) {
-	printf("Введите имя: ");
+//Ввод текста (да он понятия не имеет как работать с числами(на самом деле имеет, но записывает их как символы))
+void TextInput(char* text) {
 
 	while (1) {
-		if (scanf_s("%32s", character_name, 33) != 1) {
+		if (fgets(text, MAX_NAME_LEN, stdin) == NULL) {
 			printf("Неверный ввод\n");
 			int c;
 			while ((c = getchar()) != '\n' && c != EOF);
 		}
-		else break;
+		else if (strchr(text, '\n') == NULL) {
+			int c;
+			while ((c = getchar()) != '\n' && c != EOF);
+
+			printf("Имя слишком длинное\n");
+		}
+		else {
+			text[strcspn(text, "\r\n")] = '\0';
+			break;
+			
+		}
 	}
 };
 
+//Заполнение массива имен с файла, или стандартными значениями
 void read_item_names(char item_names_buffer[MAX_ITEMS][MAX_NAME_LEN]) {
 	FILE* itemlist = fopen("files/items.txt", "r");
 	if (itemlist == NULL) {
@@ -108,15 +138,26 @@ void read_item_names(char item_names_buffer[MAX_ITEMS][MAX_NAME_LEN]) {
 
 }
 
+void GenerateDiary(char* character_name, int current_day, int current_hour, const InventoryItems* Inventory_nameid, enum INVENTORY* inventory_array) {
+	FILE* diary = fopen("files/diary.txt", "a");
+	if (diary == NULL) { printf("Не удалось открыть файл дневника\n"); return; }
+	fprintf(diary, "Имя: %s\nВремя: День %d, %d:00\nИнвентарь: ", character_name, current_day, current_hour);
+	for (int i = 0; i < MAX_ITEMS; i++) fprintf(diary, "[%s]", Inventory_nameid[inventory_array[i]].name);
+	fprintf(diary, "\n___\n");
+	fclose(diary);
+}
+
+// Вывод меню
 void menuPrint(char* name) {
 	//printf("\033[2J\033[H"); // очищение экрана
-	printf("Привет, %s\n[%d] Выход \n[%d] Посмотреть на часы\n[%d] Поработать\n[%d] Посмотреть инвентарь\n[%d] Положить в инвентарь\n[%d] Выбросить из инвентаря\n[%d] Поиск тяжестей\n", \
-		name, MENU_exit, MENU_clock, MENU_work, MENU_inventory, MENU_put, MENU_throw, MENU_weight);
+	printf("Привет, %s\n[%d] Выход \n[%d] Посмотреть на часы\n[%d] Поработать\n[%d] Посмотреть инвентарь\n\
+[%d] Положить в инвентарь\n[%d] Выбросить из инвентаря\n[%d] Поиск тяжестей\n[%d]Поиск предмета\n[%d]Дневник\n[%d]Посмотреть логи\n", \
+		name, MENU_exit, MENU_clock, MENU_work, MENU_inventory, MENU_put, MENU_throw, MENU_weight, MENU_search, MENU_diary, MENU_logs);
 };
 
 
-//Ниже функции меню
 
+//Вычисление нового дня и часа после работы
 void calculating_workHours(int work_hours, int* current_hour, int* current_day) {
 	if (work_hours + *current_hour >= 24) {
 		*current_hour = (*current_hour + work_hours) % 24;
@@ -125,7 +166,7 @@ void calculating_workHours(int work_hours, int* current_hour, int* current_day) 
 	else *current_hour = (*current_hour + work_hours);
 }
 
-
+//Функция "Положить"
 void inventory_put(enum INVENTORY* inventory_array, char item_names[MAX_ITEMS][MAX_NAME_LEN]) {
 	printf("Куда положить?\n");
 	int slot_put = IntInputCheck(0, 9, "Нет такого слота");
@@ -135,6 +176,7 @@ void inventory_put(enum INVENTORY* inventory_array, char item_names[MAX_ITEMS][M
 	printf("Положили %s в слот %d\n", item_names[inventory_array[slot_put]], slot_put);
 }
 
+//Функция "Выбросить"
 void inventory_throw(enum INVENTORY* inventory_array, char item_names[MAX_ITEMS][MAX_NAME_LEN]) {
 	printf("С какого слота выбросить?\n");
 	int slot_throw = IntInputCheck(0, 9, "Нет такого слота");
@@ -145,7 +187,7 @@ void inventory_throw(enum INVENTORY* inventory_array, char item_names[MAX_ITEMS]
 	else printf("Слот и так пустой.\n");
 }
 
-
+// Определенно функциия
 void inventory_weight(enum INVENTORY* inventory_array) {
 	printf("Введите ID предмета\n");
 	int weight_check = IntInputCheck(1, 9, "Нет такого предмета");
@@ -157,9 +199,67 @@ void inventory_weight(enum INVENTORY* inventory_array) {
 	printf("\n");
 }
 
+// Помните его? это он
+int ID_Search(char* input_name, const InventoryItems* items) {
+	for (int i = 0; i < MAX_ITEMS; i++) {
+		if (!strcmp(input_name, items[i].name)) return items[i].id;
+	}
+	return -1;
+}
+// Функция поиска в инвентаре и вывод слотов.
+void inventory_search(int searching_ID, enum INVENTORY* inventory_array, char* text_input) {
+	if (searching_ID >= 0) {
+		int slots[MAX_ITEMS], slot_count = 0;
+		int isInInventory = 0;
+		for (int i = 0; i < MAX_ITEMS; i++) {
+			if (inventory_array[i] == searching_ID) {
+				isInInventory = 1;
+				slots[slot_count++] = i;
+			}
+		}
+		if (slot_count < MAX_ITEMS) slots[slot_count++] = -1;
+		if (isInInventory) {
+			printf("Предмет %s есть в слотах: ", text_input);
+			for (int i = 0; i < MAX_ITEMS; i++) {
+				if (slots[i] != -1) printf("[%d]", slots[i]);
+				else break;
+			}
+			printf("\n");
+		}
+		else printf("Предмета %s нет в инвентаре.\n");
+	}
+	else printf("Такого предмета нет.\n"); 
+}
 
+
+void CheckLogs() {
+	FILE* logs = fopen("files/input.txt", "r");
+	if (logs == NULL) {
+		printf("Не удалось открыть файл с логами.\n"); return;
+	}
+	else {
+		char file_line[256];
+		char mark[32];
+		int line_number = 0;
+		char log_text[192];
+		FILE* output = fopen("files/output.txt", "w");
+		if (output == NULL) { printf("Не удалось создать output.txt\n"); return; }
+		while (fgets(file_line, sizeof(file_line), logs) != NULL) {
+			sscanf_s(file_line, "%d [%31[^]]] %191[^\r\n]", &line_number, mark, (unsigned)sizeof(mark), log_text, (unsigned)sizeof(log_text));
+			if (!strcmp(mark, "WARN") || !strcmp(mark, "ERROR")) {
+				fprintf(output, "%d %s\n", line_number, log_text);
+				printf("%d %s\n", line_number, log_text);
+			}
+		}
+		if (output != NULL) fclose(output);
+	}
+	if (logs != NULL) fclose(logs);
+		
+}
 
 int main() {
+	SetConsoleCP(CP_UTF8);
+	SetConsoleOutputCP(CP_UTF8);
 	setlocale(LC_ALL, ".UTF-8");
 	int current_day = 1, current_hour = 8;
 	enum INVENTORY inventory_array[MAX_ITEMS] = { INVENTORY_empty, INVENTORY_empty, INVENTORY_axe, INVENTORY_wood, INVENTORY_wood, \
@@ -167,16 +267,27 @@ int main() {
 
 	char item_names[MAX_ITEMS][MAX_NAME_LEN];
 	read_item_names(item_names);
-	
+
+	InventoryItems Inventory_nameid[MAX_ITEMS];
+	for (int i = 0; i < MAX_ITEMS; i++) {
+		Inventory_nameid[i].id = INVENTORY_idMatch(i);
+		Inventory_nameid[i].name = item_names[i];
+	}
+
+
+	printf("Введите имя: ");
 	char character_name[33];
-	NameInput(character_name);
+	TextInput(character_name);
+
+
 
 	menuPrint(character_name);
 	while (1) {
 		printf("Выберите пункт меню\n");
-		switch (IntInputCheck(0, 6, "Неверный ввод")) {
+		switch (IntInputCheck(0, 9, "Неверный ввод")) {
 
-		case MENU_exit: printf("\033[2J\033[H"); printf("Выход.\n"); return 0;
+		case MENU_exit: 
+			printf("\033[2J\033[H"); printf("Выход.\n"); return 0;
 
 		case MENU_clock: printf("Текущее время: День %d, %d:00\n", current_day, current_hour); break;
 
@@ -192,7 +303,6 @@ int main() {
 				printf("Слот [%d]: %s (%d)\n", i, item_names[inventory_array[i]], inventory_array[i]);
 			break;
 
-
 		case MENU_put:
 			inventory_put(inventory_array, item_names);
 			break;
@@ -203,6 +313,22 @@ int main() {
 
 		case MENU_weight: 
 			inventory_weight(inventory_array);
+			break;
+
+		case MENU_search:
+			printf("Введите название: ");
+			char text_input[MAX_NAME_LEN];
+			TextInput(&text_input);
+			int searching_ID = ID_Search(text_input, Inventory_nameid);
+			inventory_search(searching_ID, inventory_array, text_input);
+			break;
+
+		case MENU_diary:
+			GenerateDiary(character_name, current_day, current_hour, Inventory_nameid, inventory_array);
+			printf("Дневничок записан в diary.txt\n");
+
+		case MENU_logs:
+			CheckLogs();
 			break;
 		}
 	}
