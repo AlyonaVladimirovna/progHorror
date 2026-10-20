@@ -24,62 +24,42 @@ enum MENU {
 	MENU_logs = 9
 };
 
-//ID предметов 
-enum INVENTORY {
-	INVENTORY_empty = 0,
-	INVENTORY_wood = 1,
-	INVENTORY_stone = 2,
-	INVENTORY_seed = 3,
-	INVENTORY_water = 4,
-	INVENTORY_flower = 5,
-	INVENTORY_potato = 6,
-	INVENTORY_wheat = 7, 
-	INVENTORY_showel = 8,
-	INVENTORY_axe = 9
-};
 
 //Массив стандартных названий
 const char* COMMON_INVENTORY_NAMES[MAX_ITEMS] = {
-	[INVENTORY_empty] = "Пусто",
-	[INVENTORY_wood] = "Древесина",
-	[INVENTORY_stone] = "Камень",
-	[INVENTORY_seed] = "Семена",
-	[INVENTORY_water] = "Бутыль с водой",
-	[INVENTORY_flower] = "Цветок", 
-	[INVENTORY_potato] = "Картофель",
-	[INVENTORY_wheat] = "Пшеница",
-	[INVENTORY_showel] = "Лопата",
-	[INVENTORY_axe] = "Топор"
+	[0] = "Пусто",
+	[1] = "Древесина",
+	[2] = "Камень",
+	[3] = "Семена",
+	[4] = "Бутыль с водой",
+	[5] = "Цветок", 
+	[6] = "Картофель",
+	[7] = "Пшеница",
+	[8] = "Лопата",
+	[9] = "Топор"
 };
 
-const int COMMON_INVENTORY_ID[MAX_ITEMS] = { INVENTORY_empty, INVENTORY_wood, INVENTORY_stone, INVENTORY_seed, INVENTORY_water, \
-										 INVENTORY_flower, INVENTORY_potato, INVENTORY_wheat, INVENTORY_showel, INVENTORY_axe };
+const int COMMON_INVENTORY_ID[MAX_ITEMS] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
 
 typedef struct {
-	enum INVENTORY id;
+	int id;
 	char name[MAX_NAME_LEN];
 } InventoryItems;
 
 //Функция для приведения id к типу enum INVENTORY
-int INVENTORY_idMatch(int input, const InventoryItems nameid[]) {
+const char* INVENTORY_nameMatch(int input, const InventoryItems nameid[]) {
 		for(int i = 0; i < MAX_ITEMS; i++){
 			if (input == nameid[i].id) {
-				switch (i) {
-				case INVENTORY_empty: return INVENTORY_empty;
-				case INVENTORY_wood: return INVENTORY_wood;
-				case INVENTORY_stone: return INVENTORY_stone;
-				case INVENTORY_seed: return INVENTORY_seed;
-				case INVENTORY_water: return INVENTORY_water;
-				case INVENTORY_flower: return INVENTORY_flower;
-				case INVENTORY_potato: return INVENTORY_potato;
-				case INVENTORY_wheat: return INVENTORY_wheat;
-				case INVENTORY_showel: return INVENTORY_showel;
-				case INVENTORY_axe: return INVENTORY_axe;
-				default: return INVENTORY_empty;
-
-				}
+				return nameid[i].name;
 			}
+		}
+};
 
+int INVENTORY_idMatch(int input, const InventoryItems nameid[]) {
+	for (int i = 0; i < MAX_ITEMS; i++) {
+		if (input == nameid[i].id) {
+			return nameid[i].id;
+		}
 	}
 };
 
@@ -127,31 +107,36 @@ void TextInput(char* text) {
 };
 
 //Заполнение массива имен с файла, или стандартными значениями
-void read_item_names(InventoryItems Inventory_nameid[]) {
+void read_item_names(InventoryItems Item_struct[]) {
 	FILE* itemlist = fopen("files/items.txt", "r");
 	if (itemlist == NULL) {
 		printf("Не удалось открыть files/items.txt, взяты названия по умолчанию\n");
 		for (int i = 0; i < MAX_ITEMS; i++) {
-			strcpy_s(Inventory_nameid[i].name, MAX_NAME_LEN, COMMON_INVENTORY_NAMES[i]);
-			Inventory_nameid[i].id = COMMON_INVENTORY_ID[i];
+			strcpy_s(Item_struct[i].name, MAX_NAME_LEN, COMMON_INVENTORY_NAMES[i]);
+			Item_struct[i].id = COMMON_INVENTORY_ID[i];
 		};
 	}
 	else {
 		char file_line[MAX_NAME_LEN];
 		for (int i = 0; i < MAX_ITEMS; i++) {
 			if (fgets(file_line, sizeof(file_line), itemlist) != NULL)
-				sscanf_s(file_line, "%d %32[^%n\n]", &(Inventory_nameid[i].id), Inventory_nameid[i].name, (unsigned)MAX_NAME_LEN);
+				sscanf_s(file_line, "%d %32[^%n\n]", &(Item_struct[i].id), Item_struct[i].name, (unsigned)MAX_NAME_LEN);
 		};
 		fclose(itemlist);
 	}
 
 }
 
-void GenerateDiary(char* character_name, int current_day, int current_hour, const InventoryItems* Inventory_nameid, enum INVENTORY* inventory_array) {
+void GenerateDiary(char* character_name, int current_day, int current_hour, const InventoryItems* inventory_array) {
 	FILE* diary = fopen("files/diary.txt", "a");
 	if (diary == NULL) { printf("Не удалось открыть файл дневника\n"); return; }
 	fprintf(diary, "Имя: %s\nВремя: День %d, %d:00\nИнвентарь: ", character_name, current_day, current_hour);
-	for (int i = 0; i < MAX_ITEMS; i++) fprintf(diary, "[%s]", Inventory_nameid[inventory_array[i]].name);
+	printf("Имя: %s\nВремя: День %d, %d:00\nИнвентарь: ", character_name, current_day, current_hour);
+	for (int i = 0; i < MAX_ITEMS; i++) { 
+		fprintf(diary, "[%s]", inventory_array[i].name); 
+		printf("[%s]", inventory_array[i].name);
+	}
+	printf("\n");
 	fprintf(diary, "\n___\n");
 	fclose(diary);
 }
@@ -176,33 +161,39 @@ void calculating_workHours(int work_hours, int* current_hour, int* current_day) 
 }
 
 //Функция "Положить"
-void inventory_put(enum INVENTORY* inventory_array, const InventoryItems Inventory_nameid[]) {
+void inventory_put(InventoryItems inventory_array[], const InventoryItems Item_struct[]) {
 	printf("Куда положить?\n");
 	int slot_put = IntInputCheck(0, 9, "Нет такого слота");
 	printf("Что положить?\n");
-	int new_item = IntInputCheck(Inventory_nameid[1].id, Inventory_nameid[9].id, "Нет такого предмета");
-	inventory_array[slot_put] = INVENTORY_idMatch(new_item, Inventory_nameid);
-	printf("Положили %s в слот %d\n", Inventory_nameid[inventory_array[slot_put]].name, slot_put);
+	int new_item = IntInputCheck(Item_struct[1].id, Item_struct[9].id, "Нет такого предмета");
+	strcpy_s(
+		inventory_array[slot_put].name,
+		sizeof(inventory_array[slot_put].name),
+		INVENTORY_nameMatch(new_item, Item_struct)
+	);
+	inventory_array[slot_put].id = INVENTORY_idMatch(new_item, Item_struct);
+	printf("Положили %s в слот %d\n", inventory_array[slot_put].name, slot_put);
 }
 
 //Функция "Выбросить"
-void inventory_throw(enum INVENTORY* inventory_array, const InventoryItems Inventory_nameid[]) {
+void inventory_throw(InventoryItems inventory_array[], const InventoryItems Item_struct[]) {
 	printf("С какого слота выбросить?\n");
 	int slot_throw = IntInputCheck(0, 9, "Нет такого слота");
-	if (inventory_array[slot_throw] != INVENTORY_empty) {
-		printf("Выбросили %s из слота %d\n", Inventory_nameid[inventory_array[slot_throw]].name, slot_throw);
-		inventory_array[slot_throw] = INVENTORY_empty;
+	if (inventory_array[slot_throw].id != Item_struct[0].id) {
+		printf("Выбросили %s из слота %d\n", inventory_array[slot_throw].name, slot_throw);
+		inventory_array[slot_throw].id = Item_struct[0].id;
+		strcpy_s(inventory_array[slot_throw].name, sizeof(inventory_array[slot_throw].name), Item_struct[0].name);
 	}
 	else printf("Слот и так пустой.\n");
 }
 
 // Определенно функциия
-void inventory_weight(enum INVENTORY* inventory_array, const InventoryItems Inventory_nameid[]) {
+void inventory_weight(const InventoryItems inventory_array[], const InventoryItems Item_struct[]) {
 	printf("Введите ID предмета\n");
-	int weight_check = IntInputCheck(Inventory_nameid[1].id, Inventory_nameid[MAX_ITEMS-1].id, "Нет такого предмета");
+	int weight_check = IntInputCheck(Item_struct[1].id, Item_struct[MAX_ITEMS-1].id, "Нет такого предмета");
 	printf("В этих слотах ID больше: ");
 	for (int i = 0; i < MAX_ITEMS; i++) {
-		if (weight_check < Inventory_nameid[inventory_array[i]].id)
+		if (weight_check < inventory_array[i].id)
 			printf("[%d] ", i);
 	}
 	printf("\n");
@@ -216,12 +207,12 @@ int ID_Search(char* input_name, const InventoryItems* items) {
 	return -1;
 }
 // Функция поиска в инвентаре и вывод слотов.
-void inventory_search(int searching_ID,  char* text_input, enum INVENTORY* inventory_array, const InventoryItems Inventory_nameid[]) {
+void inventory_search(int searching_ID,  char* text_input, const InventoryItems inventory_array[], const InventoryItems Item_struct[]) {
 	if (searching_ID >= 0) {
 		int slots[MAX_ITEMS], slot_count = 0;
 		int isInInventory = 0;
 		for (int i = 0; i < MAX_ITEMS; i++) {
-			if (Inventory_nameid[inventory_array[i]].id == searching_ID) {
+			if (inventory_array[i].id == searching_ID) {
 				isInInventory = 1;
 				slots[slot_count++] = i;
 			}
@@ -252,7 +243,7 @@ void CheckLogs() {
 		int line_number = 0;
 		char log_text[192];
 		FILE* output = fopen("files/output.txt", "w");
-		if (output == NULL) { printf("Не удалось создать output.txt\n"); return; }
+		if (output == NULL) { printf("Не удалось создать output.txt\n"); { if (logs != NULL) fclose(logs); return; } }
 		while (fgets(file_line, sizeof(file_line), logs) != NULL) {
 			sscanf_s(file_line, "%d [%31[^]]] %191[^\r\n]", &line_number, mark, (unsigned)sizeof(mark), log_text, (unsigned)sizeof(log_text));
 			if (!strcmp(mark, "WARN") || !strcmp(mark, "ERROR")) {
@@ -271,12 +262,17 @@ int main() {
 	SetConsoleOutputCP(CP_UTF8);
 	setlocale(LC_ALL, ".UTF-8");
 	int current_day = 1, current_hour = 8;
-	enum INVENTORY inventory_array[MAX_ITEMS] = { INVENTORY_empty, INVENTORY_empty, INVENTORY_axe, INVENTORY_wood, INVENTORY_wood, \
-													INVENTORY_flower, INVENTORY_empty, INVENTORY_seed, INVENTORY_empty, INVENTORY_wood };
-	
 
-	InventoryItems Inventory_nameid[MAX_ITEMS];
-	read_item_names(Inventory_nameid);
+	InventoryItems Item_struct[MAX_ITEMS];
+	read_item_names(Item_struct);
+
+
+	InventoryItems inventory_array[MAX_ITEMS];
+
+	for (int i = 0; i < MAX_ITEMS; i++) {
+		inventory_array[i] = Item_struct[rand() % 10];
+	}
+
 
 	printf("Введите имя: ");
 	char character_name[33];
@@ -303,31 +299,31 @@ int main() {
 
 		case MENU_inventory: 
 			for (int i = 0; i < MAX_ITEMS; i++)
-				printf("Слот [%d]: %s (%d)\n", i, Inventory_nameid[inventory_array[i]].name, Inventory_nameid[inventory_array[i]].id);
+				printf("Слот [%d]: %s (%d)\n", i, inventory_array[i].name, inventory_array[i].id);
 			break;
 
 		case MENU_put:
-			inventory_put(inventory_array, Inventory_nameid);
+			inventory_put(inventory_array, Item_struct);
 			break;
 
 		case MENU_throw: 
-			inventory_throw(inventory_array, Inventory_nameid);
+			inventory_throw(inventory_array, Item_struct);
 			break;
 
 		case MENU_weight: 
-			inventory_weight(inventory_array, Inventory_nameid);
+			inventory_weight(inventory_array, Item_struct);
 			break;
 
 		case MENU_search:
 			printf("Введите название: ");
 			char text_input[MAX_NAME_LEN];
 			TextInput(&text_input);
-			int searching_ID = ID_Search(text_input, Inventory_nameid);
-			inventory_search(searching_ID, text_input, inventory_array, Inventory_nameid);
+			int searching_ID = ID_Search(text_input, Item_struct);
+			inventory_search(searching_ID, text_input, inventory_array, Item_struct);
 			break;
 
 		case MENU_diary:
-			GenerateDiary(character_name, current_day, current_hour, Inventory_nameid, inventory_array);
+			GenerateDiary(character_name, current_day, current_hour, inventory_array);
 			printf("Дневничок записан в diary.txt\n");
 			break;
 
