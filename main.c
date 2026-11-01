@@ -11,6 +11,14 @@
 #define MAX_ITEMS 10
 //Максимальная длина названия предмета
 #define MAX_NAME_LEN 32
+#define MAX_PLAYER_NAME 33
+//Количество пунктов меню
+#define MENU_COUNT 11
+//Шанс появления препятствия на карте
+#define OBSTRUCTION_CHANCE 15
+//Сколько колец надо навернуть для того чтобы появился портал
+#define MAP_LOOP_CONST 3
+
 
 //ID меню
 enum MENU {
@@ -23,7 +31,8 @@ enum MENU {
 	MENU_weight = 6,
 	MENU_search = 7,
 	MENU_diary = 8,
-	MENU_logs = 9
+	MENU_logs = 9,
+	MENU_journey= 10
 };
 
 enum KEYS {
@@ -31,31 +40,23 @@ enum KEYS {
 	UP_A = 65,
 	UP_S = 83,
 	UP_D = 68,
+	UP_Q = 81,
 	LOW_W = 119,
 	LOW_A = 97,
 	LOW_S = 115,
 	LOW_D = 100,
+	LOW_Q =113,
 
-	CYRILLIC_LOW_W1 = 224,
-	CYRILLIC_LOW_W2 = 150,
 	CYRILLIC_LOW_W3 = 134,
-	CYRILLIC_UP_W1 = 142,
 	CYRILLIC_UP_W2 = 166,
-	CYRILLIC_LOW_A1 = 228,
-	CYRILLIC_LOW_A2 = 164,
 	CYRILLIC_LOW_A3 = 132,
-	CYRILLIC_UP_A1 = 132,
 	CYRILLIC_UP_A2 = 164,
-	CYRILLIC_LOW_S1 = 235,
-	CYRILLIC_LOW_S2 = 155,
 	CYRILLIC_LOW_S3 = 139,
-	CYRILLIC_UP_S1  = 147,
 	CYRILLIC_UP_S2 = 171,
-	CYRILLIC_LOW_D1 = 226,
-	CYRILLIC_LOW_D2 = 130,
 	CYRILLIC_LOW_D3 = 178,
-	CYRILLIC_UP_D1 = 162,
 	CYRILLIC_UP_D2 = 146,
+	CYRILLIC_UP_Q = 153,
+	CYRILLIC_LOW_Q = 185,
 
 	CYRILLIC_PREFIX1 = 208,
 	CYRILLIC_PREFIX2 = 209,
@@ -63,10 +64,16 @@ enum KEYS {
 	ARROW_UP = 72,
 	ARROW_DOWN = 80,
 	ARROW_LEFT = 75,
-	ARRROW_RIGHT = 77,
+	ARROW_RIGHT = 77,
 	ENTER = 13,
 };
 
+enum MAPCELLS {
+	CELL_empty = '.',
+	CELL_tree = 'T',
+	CELL_portal = 'P',
+	CELL_player = '@'
+};
 
 //Массив стандартных названий
 const char* COMMON_INVENTORY_NAMES[MAX_ITEMS] = {
@@ -82,13 +89,33 @@ const char* COMMON_INVENTORY_NAMES[MAX_ITEMS] = {
 	[9] = "Топор"
 };
 
+
 const int COMMON_INVENTORY_ID[MAX_ITEMS] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+
+
+const char* MENU_NAMES[MENU_COUNT] = {
+	[MENU_exit] = "Выход",
+	[MENU_clock] = "Посмотреть на часы",
+	[MENU_work] ="Поработать",
+	[MENU_inventory]= "Посмотреть инвентарь",
+	[MENU_put] = "Положить в инвентарь",
+	[MENU_throw] = "Выбросить из инвентаря",
+	[MENU_weight] = "Поиск тяжестей",
+	[MENU_search] = "Поиск предмета",
+ 	[MENU_diary] = "Дневник",
+	[MENU_logs]= "Посмотреть логи",
+	[MENU_journey] = "Отправится в приключение"
+};
 
 typedef struct {
 	int id;
 	char name[MAX_NAME_LEN];
 } InventoryItems;
 
+typedef struct {
+	char name[MAX_PLAYER_NAME];
+	COORD PlayerCoord;
+}PlayerInstance;
 
 //функция сопостовления id и имени
 const char* INVENTORY_nameMatch(int input, const InventoryItems nameid[]) {
@@ -166,11 +193,10 @@ void ClearConsole(HANDLE console) {
 
 // Вывод меню
 void menuPrint(char* name) {
-	//printf("\033[2J\033[H"); // очищение экрана
-	printf("Привет, %s\n[%d] Выход \n[%d] Посмотреть на часы\n[%d] Поработать\n[%d] Посмотреть инвентарь\n\
-[%d] Положить в инвентарь\n[%d] Выбросить из инвентаря\n[%d] Поиск тяжестей\n[%d] Поиск предмета\n[%d] Дневник\n[%d] Посмотреть логи\n", \
-name, MENU_exit, MENU_clock, MENU_work, MENU_inventory, MENU_put, MENU_throw, MENU_weight, MENU_search, MENU_diary, MENU_logs);
-};
+	printf("Привет, %s!\n", name);
+	for (int i = 0; i < MENU_COUNT; i++) 
+		printf("[%d] %s\n", i, MENU_NAMES[i]);
+}
 
 
 void MenuReturn() {
@@ -185,19 +211,13 @@ int MenuKeyboardInput() {
 
 	switch (key) {
 	case ARROW_DOWN:
-	case CYRILLIC_LOW_S1:
-	case CYRILLIC_LOW_S2:
 	case CYRILLIC_LOW_S3:
-	case CYRILLIC_UP_S1:
 	case CYRILLIC_UP_S2:
 	case LOW_S:
 	case UP_S: return 1;
 
 	case ARROW_UP:
-	case CYRILLIC_LOW_W1:
-	case CYRILLIC_LOW_W2:
 	case CYRILLIC_LOW_W3:
-	case CYRILLIC_UP_W1:
 	case CYRILLIC_UP_W2:
 	case LOW_W:
 	case UP_W: return -1;
@@ -213,20 +233,18 @@ int MenuSelect(HANDLE console, char* name, int last_menuCase) {
 	COORD consCoord = { 0, 0 };
 	int key;
 	menuPrint(name);
-	printf("Выберите пункт меню\n");
 	consCoord.Y = 1 + last_menuCase;
-	consCoord.X = 26;
+	consCoord.X = 30;
 	SetConsoleCursorPosition(console, consCoord);
 	printf("<-");
 	while ((key = MenuKeyboardInput()) != ENTER) {
 		ClearConsole(console);
 		menuPrint(name);
-		printf("Выберите пункт меню\n");
-		consCoord.X = 26;
+		consCoord.X = 30;
 		SetConsoleCursorPosition(console, consCoord);
 		menuCase = menuCase + key;
-		if (menuCase < 0) menuCase = 9;
-		if (menuCase > 9) menuCase = 0;
+		if (menuCase < 0) menuCase = MENU_COUNT-1;
+		if (menuCase > MENU_COUNT-1) menuCase = 0;
 		consCoord.Y = menuCase + 1;
 		SetConsoleCursorPosition(console, consCoord);
 		printf("<-");
@@ -381,8 +399,154 @@ void CheckLogs() {
 	}
 	if (logs != NULL) fclose(logs);
 	MenuReturn();
-		
 }
+
+char** GenerateMap(int* ptr_size) {
+	*ptr_size = rand() % 25 + 5;
+	char** map;
+	map = (char**)malloc(*ptr_size * sizeof(char*));
+	for (int i = 0; i < *ptr_size; i++) {
+		map[i] = (char*)malloc(*ptr_size * sizeof(char));
+	}
+
+	for (int i = 0; i < *ptr_size; i++) {
+		for (int j = 0; j < *ptr_size; j++) {
+			int isObstruction = rand() % 100;
+			if (isObstruction < OBSTRUCTION_CHANCE) map[i][j] = CELL_tree;
+			else map[i][j] = CELL_empty;
+		}
+	}
+	return map;
+}
+
+void DeleteMap(char** map, int size) {
+	for (int i = 0; i < size; i++)
+		free(map[i]);
+	free(map);
+}
+
+void PrintMap(char** map, int size) {
+	for (int i = 0; i < size; i++) {
+		for (int j = 0; j < size; j++)
+			printf("%c", map[i][j]);
+		printf("\n");
+	}
+}
+
+int JourneyKeyboardInput(int* ptr_nextX, int* ptr_nextY) {
+	int key = _getch();
+	if (key == SPEC_PREFIX) key = _getch();
+	else if (key == CYRILLIC_PREFIX1 || key == CYRILLIC_PREFIX2) key = _getch();
+
+	switch (key) {
+	case ARROW_DOWN:
+	case CYRILLIC_LOW_S3:
+	case CYRILLIC_UP_S2:
+	case LOW_S:
+	case UP_S: *ptr_nextY = *ptr_nextY + 1; return 1;
+
+	case ARROW_UP:
+	case CYRILLIC_LOW_W3:
+	case CYRILLIC_UP_W2:
+	case LOW_W:
+	case UP_W: *ptr_nextY = *ptr_nextY - 1; return 1;
+
+	case ARROW_LEFT:
+	case CYRILLIC_LOW_A3:
+	case CYRILLIC_UP_A2:
+	case LOW_A:
+	case UP_A: *ptr_nextX = *ptr_nextX - 1; return 1;
+
+	case ARROW_RIGHT:
+	case CYRILLIC_LOW_D3:
+	case CYRILLIC_UP_D2:
+	case LOW_D:
+	case UP_D: *ptr_nextX = *ptr_nextX + 1; return 1;
+
+
+	case LOW_Q:
+	case UP_Q:
+	case CYRILLIC_LOW_Q:
+	case CYRILLIC_UP_Q: return LOW_Q;
+	default: return 1;
+	};
+}
+
+
+void Journey(PlayerInstance* ptr_Player, HANDLE console) {
+	int size;
+	char** map = GenerateMap(&size);
+	int next_x, next_y;
+	int loop_count = 0;
+	int isMapWithPortal = 0;
+	 do {
+		next_x = rand() % size,
+		next_y = rand() % size;
+	 } while (map[next_y][next_x] == CELL_tree);
+	 ptr_Player->PlayerCoord.X = next_x;
+	 ptr_Player->PlayerCoord.Y= next_y;
+	PrintMap(map, size);
+	printf("Для выхода нажмите Q");
+	SetConsoleCursorPosition(console, ptr_Player->PlayerCoord);
+	printf("%c", CELL_player);
+	while (JourneyKeyboardInput(&next_x, &next_y) != LOW_Q) {
+		if (next_y < 0) { next_y = size - 1; loop_count++; }
+		else if (next_y > size - 1) {
+			next_y = 0; loop_count++;
+		}
+		if (next_x > size - 1) {
+			next_x = 0; loop_count++;
+		}
+		else if (next_x < 0) { next_x = size - 1; loop_count++; }
+		if (map[next_y][next_x] == CELL_tree) { 
+			next_x = ptr_Player->PlayerCoord.X;
+			next_y = ptr_Player->PlayerCoord.Y;
+			continue; 
+		}
+		if (loop_count > MAP_LOOP_CONST && !isMapWithPortal) {
+			int randX, randY;
+			do {
+				randX = rand() % size;
+				randY = rand() % size;
+			} while (map[randY][randX] == CELL_tree);
+			map[randY][randX] = CELL_portal;
+			ClearConsole(console);
+			PrintMap(map, size);
+			printf("Для выхода нажмите Q");
+			isMapWithPortal = 1;
+		}
+		if (map[next_y][next_x] == CELL_portal) {
+			ClearConsole(console);
+			DeleteMap(map, size);
+			map = GenerateMap(&size);
+			loop_count = 0;
+			isMapWithPortal = 0;
+			do {
+				next_x = rand() % size,
+				next_y = rand() % size;
+			} while (map[next_y][next_x] == CELL_tree);
+			ptr_Player->PlayerCoord.X = next_x;
+			ptr_Player->PlayerCoord.Y = next_y;
+			PrintMap(map, size);
+			printf("Для выхода нажмите Q");
+			SetConsoleCursorPosition(console, ptr_Player->PlayerCoord);
+			printf("%c", CELL_player);
+			continue;
+		}
+
+		SetConsoleCursorPosition(console, ptr_Player->PlayerCoord);
+		printf("%c", map[ptr_Player->PlayerCoord.Y][ptr_Player->PlayerCoord.X]);
+		ptr_Player->PlayerCoord.X = next_x;
+		ptr_Player->PlayerCoord.Y = next_y;
+		SetConsoleCursorPosition(console, ptr_Player->PlayerCoord);
+		printf("%c", CELL_player);
+	}
+	ClearConsole(console);
+	printf("Прикючение закончено!\n");
+	MenuReturn();
+	DeleteMap(map, size);
+}
+
 
 int main() {
 	SetConsoleCP(CP_UTF8);
@@ -404,15 +568,15 @@ int main() {
 
 
 	printf("Введите имя: ");
-	char character_name[33];
-	TextInput(character_name);
+	PlayerInstance Player;
+	TextInput(&Player.name);
 
 
 
 	int last_menuCase = 0;
 	while (1) {
 		ClearConsole(console);
-		switch (last_menuCase = MenuSelect(console, character_name, last_menuCase)) {
+		switch (last_menuCase = MenuSelect(console, Player.name, last_menuCase)) {
 
 		case MENU_exit: 
 			ClearConsole(console); printf("Выход.\n"); return 0;
@@ -461,13 +625,18 @@ int main() {
 
 		case MENU_diary:
 			ClearConsole(console);
-			GenerateDiary(character_name, current_day, current_hour, inventory_array);
+			GenerateDiary(Player.name, current_day, current_hour, inventory_array);
 			printf("Дневничок записан в diary.txt\n");
 			break;
 
 		case MENU_logs:
 			ClearConsole(console);
 			CheckLogs();
+			break;
+
+		case MENU_journey:
+			ClearConsole(console);
+			Journey(&Player, console);
 			break;
 		}
 
