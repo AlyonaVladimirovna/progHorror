@@ -1,4 +1,3 @@
-//Лаба 3, Вариант 5
 #include <stdio.h>
 #include <locale.h>
 #include <string.h>
@@ -72,6 +71,7 @@ enum MAPCELLS {
 	CELL_empty = '.',
 	CELL_tree = 'T',
 	CELL_portal = 'P',
+	CELL_campfire = '^',
 	CELL_player = '@'
 };
 
@@ -416,6 +416,7 @@ char** GenerateMap(int* ptr_size) {
 			else map[i][j] = CELL_empty;
 		}
 	}
+	map[rand() % *ptr_size][rand() % *ptr_size] = CELL_campfire;
 	return map;
 }
 
@@ -479,6 +480,7 @@ void Journey(PlayerInstance* ptr_Player, HANDLE console) {
 	int next_x, next_y;
 	int loop_count = 0;
 	int isMapWithPortal = 0;
+	int home_range = 0;
 	 do {
 		next_x = rand() % size,
 		next_y = rand() % size;
@@ -486,10 +488,10 @@ void Journey(PlayerInstance* ptr_Player, HANDLE console) {
 	 ptr_Player->PlayerCoord.X = next_x;
 	 ptr_Player->PlayerCoord.Y= next_y;
 	PrintMap(map, size);
-	printf("Для выхода нажмите Q");
+	printf("Для выхода нажмите Q у костра (^)");
 	SetConsoleCursorPosition(console, ptr_Player->PlayerCoord);
 	printf("%c", CELL_player);
-	while (JourneyKeyboardInput(&next_x, &next_y) != LOW_Q) {
+	while (!(JourneyKeyboardInput(&next_x, &next_y) == LOW_Q && map[ptr_Player->PlayerCoord.Y][ptr_Player->PlayerCoord.X] == CELL_campfire)) {
 		if (next_y < 0) { next_y = size - 1; loop_count++; }
 		else if (next_y > size - 1) {
 			next_y = 0; loop_count++;
@@ -512,10 +514,11 @@ void Journey(PlayerInstance* ptr_Player, HANDLE console) {
 			map[randY][randX] = CELL_portal;
 			ClearConsole(console);
 			PrintMap(map, size);
-			printf("Для выхода нажмите Q");
+			printf("Для выхода нажмите Q у костра (^)");
 			isMapWithPortal = 1;
 		}
 		if (map[next_y][next_x] == CELL_portal) {
+			home_range++;
 			ClearConsole(console);
 			DeleteMap(map, size);
 			map = GenerateMap(&size);
@@ -528,7 +531,8 @@ void Journey(PlayerInstance* ptr_Player, HANDLE console) {
 			ptr_Player->PlayerCoord.X = next_x;
 			ptr_Player->PlayerCoord.Y = next_y;
 			PrintMap(map, size);
-			printf("Для выхода нажмите Q");
+			printf("Дальность от дома: %d\n", home_range);
+			printf("Для выхода нажмите Q у костра (^)");
 			SetConsoleCursorPosition(console, ptr_Player->PlayerCoord);
 			printf("%c", CELL_player);
 			continue;
@@ -542,9 +546,9 @@ void Journey(PlayerInstance* ptr_Player, HANDLE console) {
 		printf("%c", CELL_player);
 	}
 	ClearConsole(console);
+	DeleteMap(map, size);
 	printf("Прикючение закончено!\n");
 	MenuReturn();
-	DeleteMap(map, size);
 }
 
 
