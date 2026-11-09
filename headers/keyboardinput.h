@@ -1,0 +1,38 @@
+#pragma once
+
+enum KEYS {
+	UP_W = 87,
+	UP_A = 65,
+	UP_S = 83,
+	UP_D = 68,
+	UP_Q = 81,
+	LOW_W = 119,
+	LOW_A = 97,
+	LOW_S = 115,
+	LOW_D = 100,
+	LOW_Q = 113,
+
+	CYRILLIC_LOW_W3 = 134,
+	CYRILLIC_UP_W2 = 166,
+	CYRILLIC_LOW_A3 = 132,
+	CYRILLIC_UP_A2 = 164,
+	CYRILLIC_LOW_S3 = 139,
+	CYRILLIC_UP_S2 = 171,
+	CYRILLIC_LOW_D3 = 178,
+	CYRILLIC_UP_D2 = 146,
+	CYRILLIC_UP_Q = 153,
+	CYRILLIC_LOW_Q = 185,
+
+	CYRILLIC_PREFIX1 = 208,
+	CYRILLIC_PREFIX2 = 209,
+	SPEC_PREFIX = 224,
+	ARROW_UP = 72,
+	ARROW_DOWN = 80,
+	ARROW_LEFT = 75,
+	ARROW_RIGHT = 77,
+	ENTER = 13,
+};
+
+int MenuKeyboardInput();
+
+int JourneyKeyboardInput(int* ptr_nextX, int* ptr_nextY);
