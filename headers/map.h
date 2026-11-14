@@ -1,4 +1,6 @@
 #pragma once
+#include "player.h"
+#include <windows.h>
 
 //Шанс появления препятствия на карте
 #define OBSTRUCTION_CHANCE 15
@@ -13,12 +15,20 @@ enum MAPCELLS {
 	CELL_player = '@'
 };
 
+typedef struct {
+	char** map_array;
+	int size;
+	int home_range;
+	int loop_count;
+	int isMapWithPortal;
+}MapStruct;
 
-char** GenerateMap(int* ptr_size);
+void GenerateMap(MapStruct* map);
 
-void DeleteMap(char** map, int size);
+void DeleteMap(MapStruct* map);
 
-void PrintMap(char** map, int size);
+void PrintMap(MapStruct* map);
 
-void GetRandomCoords(int* ptr_x, int* ptr_y, int size, char** map);
+void GetRandomCoords(int* ptr_x, int* ptr_y, MapStruct* map);
 
+void Journey(PlayerInstance* ptr_Player, HANDLE console);

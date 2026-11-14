@@ -9,145 +9,8 @@
 #include "keyboardinput.h"
 #include "map.h"
 #include "player.h"
+#include "utils.h"
 #pragma warning(disable: 4996)
-
-
-
-void ClearConsole(HANDLE console) {
-	CONSOLE_SCREEN_BUFFER_INFO info;
-	DWORD written;
-	COORD start = { 0, 0 };
-
-	if (!GetConsoleScreenBufferInfo(console, &info)) return;
-
-	DWORD size = info.dwSize.X * info.dwSize.Y;
-
-	FillConsoleOutputCharacterA(console, ' ', size, start, &written);
-	FillConsoleOutputAttribute(console, info.wAttributes, size, start, &written);
-	SetConsoleCursorPosition(console, start);
-}
-
-
-void GenerateDiary(char* character_name, int current_day, int current_hour, const InventoryItems* inventory_array) {
-	FILE* diary = fopen("files/diary.txt", "a");
-	if (diary == NULL) { printf("Не удалось открыть файл дневника\n");MenuReturn(); return; }
-	fprintf(diary, "Имя: %s\nВремя: День %d, %d:00\nИнвентарь: ", character_name, current_day, current_hour);
-	printf("Имя: %s\nВремя: День %d, %d:00\nИнвентарь: ", character_name, current_day, current_hour);
-	for (int i = 0; i < MAX_ITEMS; i++) { 
-		fprintf(diary, "[%s]", inventory_array[i].name); 
-		printf("[%s]", inventory_array[i].name);
-	}
-	printf("\n");
-	fprintf(diary, "\n___\n");
-	fclose(diary);
-	MenuReturn();
-}
-
-
-//Вычисление нового дня и часа после работы
-void calculating_workHours(int work_hours, int* current_hour, int* current_day) {
-	if (work_hours + *current_hour >= 24) {
-		*current_hour = (*current_hour + work_hours) % 24;
-		*current_day = *current_day + 1;
-	}
-	else *current_hour = (*current_hour + work_hours);
-}
-
-
-void CheckLogs() {
-	FILE* logs = fopen("files/input.txt", "r");
-	if (logs == NULL) {
-		printf("Не удалось открыть файл с логами.\n"); MenuReturn(); return;
-	}
-	else {
-		char file_line[256];
-		char mark[32];
-		int line_number = 0;
-		char log_text[192];
-		FILE* output = fopen("files/output.txt", "w");
-		if (output == NULL) { printf("Не удалось создать output.txt\n"); { if (logs != NULL) fclose(logs); MenuReturn(); return; } }
-		while (fgets(file_line, sizeof(file_line), logs) != NULL) {
-			sscanf_s(file_line, "%d [%31[^]]] %191[^\r\n]", &line_number, mark, (unsigned)sizeof(mark), log_text, (unsigned)sizeof(log_text));
-			if (!strcmp(mark, "WARN") || !strcmp(mark, "ERROR")) {
-				fprintf(output, "%d %s\n", line_number, log_text);
-				printf("%d %s\n", line_number, log_text);
-			}
-		}
-		if (output != NULL) fclose(output);
-	}
-	if (logs != NULL) fclose(logs);
-	MenuReturn();
-}
-
-
-void Journey(PlayerInstance* ptr_Player, HANDLE console) {
-	int size;
-	char** map = GenerateMap(&size);
-	int next_x, next_y;
-	int loop_count = 0;
-	int isMapWithPortal = 0;
-	int home_range = 0;
-	GetRandomCoords(&next_x, &next_y, size, map);
-	 ptr_Player->PlayerCoord.X = next_x;
-	 ptr_Player->PlayerCoord.Y= next_y;
-	PrintMap(map, size);
-	printf("Для выхода нажмите Q у костра (^)");
-	SetConsoleCursorPosition(console, ptr_Player->PlayerCoord);
-	printf("%c", CELL_player);
-	while (!(JourneyKeyboardInput(&next_x, &next_y) == LOW_Q && map[ptr_Player->PlayerCoord.Y][ptr_Player->PlayerCoord.X] == CELL_campfire)) {
-		if (next_y < 0) { next_y = size - 1; loop_count++; }
-		else if (next_y > size - 1) {
-			next_y = 0; loop_count++;
-		}
-		if (next_x > size - 1) {
-			next_x = 0; loop_count++;
-		}
-		else if (next_x < 0) { next_x = size - 1; loop_count++; }
-		if (map[next_y][next_x] == CELL_tree) { 
-			next_x = ptr_Player->PlayerCoord.X;
-			next_y = ptr_Player->PlayerCoord.Y;
-			continue; 
-		}
-		if (loop_count > MAP_LOOP_CONST && !isMapWithPortal) {
-			int randX, randY;
-			GetRandomCoords(&randX, &randY, size, map);
-			map[randY][randX] = CELL_portal;
-			ClearConsole(console);
-			PrintMap(map, size);
-			printf("Для выхода нажмите Q у костра (^)");
-			isMapWithPortal = 1;
-		}
-		if (map[next_y][next_x] == CELL_portal) {
-			home_range++;
-			ClearConsole(console);
-			DeleteMap(map, size);
-			map = GenerateMap(&size);
-			loop_count = 0;
-			isMapWithPortal = 0;
-			GetRandomCoords(&next_x, &next_y, size, map);
-			ptr_Player->PlayerCoord.X = next_x;
-			ptr_Player->PlayerCoord.Y = next_y;
-			PrintMap(map, size);
-			printf("Дальность от дома: %d\n", home_range);
-			printf("Для выхода нажмите Q у костра (^)");
-			SetConsoleCursorPosition(console, ptr_Player->PlayerCoord);
-			printf("%c", CELL_player);
-			continue;
-		}
-
-		SetConsoleCursorPosition(console, ptr_Player->PlayerCoord);
-		printf("%c", map[ptr_Player->PlayerCoord.Y][ptr_Player->PlayerCoord.X]);
-		ptr_Player->PlayerCoord.X = next_x;
-		ptr_Player->PlayerCoord.Y = next_y;
-		SetConsoleCursorPosition(console, ptr_Player->PlayerCoord);
-		printf("%c", CELL_player);
-	}
-	ClearConsole(console);
-	DeleteMap(map, size);
-	printf("Прикючение закончено!\n");
-	MenuReturn();
-}
-
 
 int main() {
 	SetConsoleCP(CP_UTF8);
@@ -237,16 +100,19 @@ int main() {
 			ClearConsole(console);
 			GenerateDiary(Player.name, current_day, current_hour, Player.inventory);
 			printf("Дневничок записан в diary.txt\n");
+			MenuReturn();
 			break;
 
 		case MENU_logs:
 			ClearConsole(console);
 			CheckLogs();
+			MenuReturn();
 			break;
 
 		case MENU_journey:
 			ClearConsole(console);
 			Journey(&Player, console);
+			MenuReturn();
 			break;
 		}
 
