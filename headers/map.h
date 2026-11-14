@@ -27,7 +27,7 @@ void GenerateMap(MapStruct* map);
 
 void DeleteMap(MapStruct* map);
 
-void PrintMap(MapStruct* map);
+void PrintMap(MapStruct* map, DWORD sleep);
 
 void GetRandomCoords(int* ptr_x, int* ptr_y, MapStruct* map);
 

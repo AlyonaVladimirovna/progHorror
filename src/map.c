@@ -22,15 +22,21 @@ void GenerateMap(MapStruct* map) {
 }
 
 void DeleteMap(MapStruct* map) {
-	for (int i = 0; i < map->size; i++)
+	for (int i = 0; i < map->size; i++) {
 		free(map->map_array[i]);
+		printf("Память по адресу %p освобождена\n", &map->map_array[i]);
+		Sleep(100);
+	}
 	free(map->map_array);
+	printf("Память по адресу %p освобождена\n", &map->map_array);
+	Sleep(700);
 }
 
-void PrintMap(MapStruct map) {
+void PrintMap(MapStruct map, DWORD sleep) {
 	for (int i = 0; i < map.size; i++) {
 		for (int j = 0; j < map.size; j++)
 			printf("%c", map.map_array[i][j]);
+		Sleep(sleep);
 		printf("\n");
 	}
 }
@@ -54,7 +60,8 @@ void Journey(PlayerInstance* ptr_Player, HANDLE console) {
 	GetRandomCoords(&next_x, &next_y, map);
 	ptr_Player->PlayerCoord.X = next_x;
 	ptr_Player->PlayerCoord.Y = next_y;
-	PrintMap(map);
+	PrintMap(map, 50);
+	printf("Дальность от дома: %d\n", map.home_range);
 	printf("Для выхода нажмите Q у костра (^)");
 	SetConsoleCursorPosition(console, ptr_Player->PlayerCoord);
 	printf("%c", CELL_player);
@@ -77,7 +84,8 @@ void Journey(PlayerInstance* ptr_Player, HANDLE console) {
 			GetRandomCoords(&randX, &randY, map);
 			map.map_array[randY][randX] = CELL_portal;
 			ClearConsole(console);
-			PrintMap(map);
+			PrintMap(map, 0);
+			printf("Дальность от дома: %d\n", map.home_range);
 			printf("Для выхода нажмите Q у костра (^)");
 			map.isMapWithPortal = 1;
 		}
@@ -85,13 +93,19 @@ void Journey(PlayerInstance* ptr_Player, HANDLE console) {
 			map.home_range++;
 			ClearConsole(console);
 			DeleteMap(&map);
+			printf("Создание новой карты");
+			for (int i = 0; i < 4; i++) {
+				Sleep(500);
+				printf(".");
+			}
+			ClearConsole(console);
 			GenerateMap(&map);
 			map.loop_count = 0;
 			map.isMapWithPortal = 0;
 			GetRandomCoords(&next_x, &next_y, map);
 			ptr_Player->PlayerCoord.X = next_x;
 			ptr_Player->PlayerCoord.Y = next_y;
-			PrintMap(map);
+			PrintMap(map, 50);
 			printf("Дальность от дома: %d\n", map.home_range);
 			printf("Для выхода нажмите Q у костра (^)");
 			SetConsoleCursorPosition(console, ptr_Player->PlayerCoord);

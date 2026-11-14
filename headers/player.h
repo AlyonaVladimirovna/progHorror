@@ -1,9 +1,11 @@
 #pragma once
 #include "inventory.h"
+#include "consoleinput.h"
 #include <Windows.h>
 
 #define MAX_PLAYER_NAME 33
-//Количество пунктов меню
+#define MAX_PLAYER_HP 100
+#define MAX_PLAYER_STAMINA 100
 
 typedef struct {
 	char name[MAX_PLAYER_NAME];
@@ -14,3 +16,4 @@ typedef struct {
 	int gold;
 }PlayerInstance;
 
+PlayerInstance* CreatePlayer();
