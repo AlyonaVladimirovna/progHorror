@@ -441,3 +441,4 @@ FodyWeavers.xsd
 *.vcxproj.filters
 *.vcxproj.user
 .vs/
+/ProgHorror.sln
