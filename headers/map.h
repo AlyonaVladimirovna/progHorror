@@ -6,6 +6,7 @@
 #define OBSTRUCTION_CHANCE 15
 //Сколько колец надо навернуть для того чтобы появился портал
 #define MAP_LOOP_CONST 3
+#define GOLD_RATE 5
 
 enum MAPCELLS {
 	CELL_empty = '.',
@@ -30,5 +31,7 @@ void DeleteMap(MapStruct* map);
 void PrintMap(MapStruct* map, DWORD sleep);
 
 void GetRandomCoords(int* ptr_x, int* ptr_y, MapStruct* map);
+
+void PrintBottomBar(MapStruct* map, PlayerInstance* Player);
 
 void Journey(PlayerInstance* ptr_Player, HANDLE console);

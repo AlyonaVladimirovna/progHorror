@@ -25,7 +25,6 @@ int IntInputCheck(int low_limit, int up_limit, const char* error_message) {
 
 //Ввод текста (да он понятия не имеет как работать с числами(на самом деле имеет, но записывает их как символы))
 void TextInput(char* text, int max_len) {
-
 	while (1) {
 		if (fgets(text, max_len, stdin) == NULL) {
 			printf("Неверный ввод\n");

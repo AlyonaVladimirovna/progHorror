@@ -5,6 +5,7 @@
 #include <stdlib.h>
 
 void GenerateMap(MapStruct* map) {
+	if (&map == NULL) { printf("Указатель на MapStruct равен NULL"); return; }
 	map->size = rand() % 25 + 5;
 	map->map_array = (char**)malloc(map->size * sizeof(char*));
 	for (int i = 0; i < map->size; i++) {
@@ -29,7 +30,6 @@ void DeleteMap(MapStruct* map) {
 	}
 	free(map->map_array);
 	printf("Память по адресу %p освобождена\n", &map->map_array);
-	Sleep(700);
 }
 
 void PrintMap(MapStruct map, DWORD sleep) {
@@ -48,11 +48,22 @@ void GetRandomCoords(int* ptr_x, int* ptr_y, MapStruct map) {
 	} while (map.map_array[*ptr_y][*ptr_x] == CELL_tree);
 }
 
+void PrintBottomBar(MapStruct map, PlayerInstance Player, HANDLE console) {
+	COORD bottomBarCoords = { 0, map.size + 1 };
+	SetConsoleCursorPosition(console, bottomBarCoords);
+	printf("Здоровье: %d/%d | Выноосливость: %d/%d | Золото: %d | Время: %d | Дальность от дома: %d\nДля выхода нажмите Q у костра(^)", \
+		Player.hp, Player.max_hp, Player.stamina, Player.max_stamina, Player.gold, Player.current_hour, map.home_range);
+}
+
 
 
 void Journey(PlayerInstance* ptr_Player, HANDLE console) {
+	if (ptr_Player == NULL) { printf("Указатель на PlayerInstance равен NULL"); return; }
+	COORD buffer = { 120, 40 };
+	SetConsoleScreenBufferSize(console, buffer);
 	MapStruct map;
 	GenerateMap(&map);
+	if (&map == NULL) { printf("Указатель на MapStruct равен NULL"); return; }
 	map.isMapWithPortal = 0;
 	map.loop_count = 0;
 	map.home_range = 0;
@@ -61,11 +72,20 @@ void Journey(PlayerInstance* ptr_Player, HANDLE console) {
 	ptr_Player->PlayerCoord.X = next_x;
 	ptr_Player->PlayerCoord.Y = next_y;
 	PrintMap(map, 50);
-	printf("Дальность от дома: %d\n", map.home_range);
-	printf("Для выхода нажмите Q у костра (^)");
+	PrintBottomBar(map, *ptr_Player, console);
 	SetConsoleCursorPosition(console, ptr_Player->PlayerCoord);
 	printf("%c", CELL_player);
 	while (!(JourneyKeyboardInput(&next_x, &next_y) == LOW_Q && map.map_array[ptr_Player->PlayerCoord.Y][ptr_Player->PlayerCoord.X] == CELL_campfire)) {
+		if (ptr_Player->stamina == 0 || ptr_Player->current_hour == 2) {
+			ClearConsole(console);
+			ptr_Player->gold = ptr_Player->gold / 2;
+			printf("Вы упали в обморок! Вас спасли, но забрали половину золота (%d)\n", ptr_Player->gold);
+			ptr_Player->stamina = ptr_Player->max_stamina;
+			ptr_Player->hp = ptr_Player->max_hp;
+			DeleteMap(&map);
+			return;
+		}
+
 		if (next_y < 0) { next_y = map.size - 1; map.loop_count++; }
 		else if (next_y > map.size - 1) {
 			next_y = 0; map.loop_count++;
@@ -85,12 +105,14 @@ void Journey(PlayerInstance* ptr_Player, HANDLE console) {
 			map.map_array[randY][randX] = CELL_portal;
 			ClearConsole(console);
 			PrintMap(map, 0);
-			printf("Дальность от дома: %d\n", map.home_range);
-			printf("Для выхода нажмите Q у костра (^)");
+			PrintBottomBar(map, *ptr_Player, console);
 			map.isMapWithPortal = 1;
 		}
 		if (map.map_array[next_y][next_x] == CELL_portal) {
 			map.home_range++;
+			ptr_Player->stamina -= 5;
+			ptr_Player->current_hour += 1;
+			ptr_Player->gold += GOLD_RATE * map.home_range;
 			ClearConsole(console);
 			DeleteMap(&map);
 			printf("Создание новой карты");
@@ -106,19 +128,21 @@ void Journey(PlayerInstance* ptr_Player, HANDLE console) {
 			ptr_Player->PlayerCoord.X = next_x;
 			ptr_Player->PlayerCoord.Y = next_y;
 			PrintMap(map, 50);
-			printf("Дальность от дома: %d\n", map.home_range);
-			printf("Для выхода нажмите Q у костра (^)");
+			PrintBottomBar(map, *ptr_Player, console);
 			SetConsoleCursorPosition(console, ptr_Player->PlayerCoord);
 			printf("%c", CELL_player);
 			continue;
 		}
-
+		
 		SetConsoleCursorPosition(console, ptr_Player->PlayerCoord);
 		printf("%c", map.map_array[ptr_Player->PlayerCoord.Y][ptr_Player->PlayerCoord.X]);
 		ptr_Player->PlayerCoord.X = next_x;
 		ptr_Player->PlayerCoord.Y = next_y;
 		SetConsoleCursorPosition(console, ptr_Player->PlayerCoord);
 		printf("%c", CELL_player);
+		ptr_Player->stamina -= 1;
+		PrintBottomBar(map, *ptr_Player, console);
+
 	}
 	ClearConsole(console);
 	DeleteMap(&map);
