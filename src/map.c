@@ -4,22 +4,98 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
+
+void RandBiome(MapStruct* map) {
+	BiomeStruct Woods = {
+	.id = WOODS,
+	.name = "Лес",
+	.obstruction_chance = 20,
+	.stamina_rate = 1,
+	.gold_rate = 1,
+	.cell_empty = CELL_default_empty
+	};
+
+	BiomeStruct Swamp = {
+	.id = SWAMP,
+	.name = "Топь",
+	.obstruction_chance = 25,
+	.stamina_rate = 2,
+	.gold_rate = 2,
+	.cell_empty = CELL_swamp_empty
+	};
+
+	BiomeStruct Sparse = {
+	.id = SPARSE,
+	.name = "Редколесье",
+	.obstruction_chance = 10,
+	.stamina_rate = 1,
+	.gold_rate = 1, 
+	.cell_empty = CELL_default_empty
+	};
+
+	const BiomeStruct Sequoia = {
+	.id = SEQUOIA,
+	.name = "Секвойи",
+	.obstruction_chance = 15,
+	.stamina_rate = 1,
+	.gold_rate = 2,
+	.cell_empty = CELL_default_empty
+	};
+	int instance = rand() % BIOME_COUNT ;
+	switch (instance) {
+	case WOODS: map->biome = Woods; return;
+	case SWAMP: map->biome = Swamp; return;
+	case SPARSE: map->biome = Sparse; return;
+	case SEQUOIA: map->biome = Sequoia; return;
+	default: map->biome = Woods; 
+	}
+}
+
+void FillMap(MapStruct* map) {
+	if (map->biome.id < WOODS || map->biome.id > BIOME_COUNT-1) {
+		printf("Биом не задан!\n"); Sleep(1000); return;
+	}
+
+	if (map->biome.id == SEQUOIA) {
+		for (int i = 0; i < map->size; i++) {
+			for (int j = 0; j < map->size; j++) {
+				if (map->map_array[i][j] == CELL_tree) continue;
+				int isObstruction = rand() % 100;
+				if (isObstruction < map->biome.obstruction_chance) {
+					map->map_array[i][j] = CELL_tree;
+					if (i + 1 < map->size) map->map_array[i + 1][j] = CELL_tree;
+					if (j + 1 < map->size) map->map_array[i][j + 1] = CELL_tree;
+					if (i + 1 < map->size && i + 1 < map->size) map->map_array[i + 1][j + 1] = CELL_tree;
+				}
+				else map->map_array[i][j] = map->biome.cell_empty;
+			}
+		}
+	}
+
+	else {
+		for (int i = 0; i < map->size; i++) {
+			for (int j = 0; j < map->size; j++) {
+				int isObstruction = rand() % 100;
+				if (isObstruction < map->biome.obstruction_chance) map->map_array[i][j] = CELL_tree;
+				else map->map_array[i][j] = map->biome.cell_empty;
+			}
+		}
+	}
+	map->map_array[rand() % map->size][rand() % map->size] = CELL_campfire;
+}
+
+
+
 void GenerateMap(MapStruct* map) {
-	if (&map == NULL) { printf("Указатель на MapStruct равен NULL"); return; }
+	if (map == NULL) { printf("Указатель на MapStruct равен NULL"); return; }
 	map->size = rand() % 25 + 5;
 	map->map_array = (char**)malloc(map->size * sizeof(char*));
 	for (int i = 0; i < map->size; i++) {
 		map->map_array[i] = (char*)malloc(map->size * sizeof(char));
 	}
-
-	for (int i = 0; i < map->size; i++) {
-		for (int j = 0; j < map->size; j++) {
-			int isObstruction = rand() % 100;
-			if (isObstruction < OBSTRUCTION_CHANCE) map->map_array[i][j] = CELL_tree;
-			else map->map_array[i][j] = CELL_empty;
-		}
-	}
-	map->map_array[rand() % map->size][rand() % map->size] = CELL_campfire;
+	RandBiome(map);
+	FillMap(map);
 }
 
 void DeleteMap(MapStruct* map) {
@@ -51,8 +127,8 @@ void GetRandomCoords(int* ptr_x, int* ptr_y, MapStruct map) {
 void PrintBottomBar(MapStruct map, PlayerInstance Player, HANDLE console) {
 	COORD bottomBarCoords = { 0, map.size + 1 };
 	SetConsoleCursorPosition(console, bottomBarCoords);
-	printf("Здоровье: %d/%d | Выноосливость: %d/%d | Золото: %d | Время: %d | Дальность от дома: %d\nДля выхода нажмите Q у костра(^)", \
-		Player.hp, Player.max_hp, Player.stamina, Player.max_stamina, Player.gold, Player.current_hour, map.home_range);
+	printf("Здоровье: %d/%d | Выноосливость: %d/%d | Золото: %d | Время: %d | Дальность от дома: %d |Биом: %s\nДля выхода нажмите Q у костра(^)", \
+		Player.hp, Player.max_hp, Player.stamina, Player.max_stamina, Player.gold, Player.current_hour, map.home_range, map.biome.name);
 }
 
 
@@ -112,7 +188,7 @@ void Journey(PlayerInstance* ptr_Player, HANDLE console) {
 			map.home_range++;
 			ptr_Player->stamina -= 5;
 			ptr_Player->current_hour += 1;
-			ptr_Player->gold += GOLD_RATE * map.home_range;
+			ptr_Player->gold += GOLD_RATE * map.home_range * map.biome.gold_rate;
 			ClearConsole(console);
 			DeleteMap(&map);
 			printf("Создание новой карты");
@@ -140,7 +216,7 @@ void Journey(PlayerInstance* ptr_Player, HANDLE console) {
 		ptr_Player->PlayerCoord.Y = next_y;
 		SetConsoleCursorPosition(console, ptr_Player->PlayerCoord);
 		printf("%c", CELL_player);
-		ptr_Player->stamina -= 1;
+		ptr_Player->stamina -= 1 * map.biome.stamina_rate;
 		PrintBottomBar(map, *ptr_Player, console);
 
 	}

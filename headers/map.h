@@ -2,19 +2,37 @@
 #include "player.h"
 #include <windows.h>
 
-//Шанс появления препятствия на карте
-#define OBSTRUCTION_CHANCE 15
+#define BIOME_COUNT 4
+#define BIOME_NAME_LEN 64
 //Сколько колец надо навернуть для того чтобы появился портал
 #define MAP_LOOP_CONST 3
 #define GOLD_RATE 5
 
+enum BIOME_ID {
+	WOODS,
+	SWAMP,
+	SPARSE,
+	SEQUOIA
+	};
+
 enum MAPCELLS {
-	CELL_empty = '.',
+	CELL_default_empty = '.',
 	CELL_tree = 'T',
 	CELL_portal = 'P',
 	CELL_campfire = '^',
-	CELL_player = '@'
+	CELL_player = '@',
+	CELL_swamp_empty = '~'
 };
+
+
+typedef struct {
+	enum BIOME_ID id;
+	char name[BIOME_NAME_LEN];
+	int obstruction_chance;
+	int stamina_rate;
+	int gold_rate;
+	enum MAPCELLS cell_empty;
+}BiomeStruct;
 
 typedef struct {
 	char** map_array;
@@ -22,6 +40,7 @@ typedef struct {
 	int home_range;
 	int loop_count;
 	int isMapWithPortal;
+	BiomeStruct biome;
 }MapStruct;
 
 void GenerateMap(MapStruct* map);
