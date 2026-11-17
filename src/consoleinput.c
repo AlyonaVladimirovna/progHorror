@@ -44,3 +44,15 @@ void TextInput(char* text, int max_len) {
 		}
 	}
 };
+
+
+int YesNoInput() {
+	char* answer[16];
+	TextInput(&answer, 16);
+	while (strcmp(answer, "y") && strcmp(answer, "n")) {
+		printf("неверный ввод, попробуйте снова\n");
+		TextInput(answer, 16);
+	}
+	if (!strcmp(answer, "y")) return 1;
+	else return 0;
+}

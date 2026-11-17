@@ -11,6 +11,8 @@ enum KEYS {
 	LOW_S = 115,
 	LOW_D = 100,
 	LOW_Q = 113,
+	UP_M ='M',
+	LOW_M = 109,
 
 	CYRILLIC_LOW_W3 = 134,
 	CYRILLIC_UP_W2 = 166,

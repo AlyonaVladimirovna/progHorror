@@ -1,5 +1,6 @@
 #pragma once
 #include "player.h"
+#include "inventory.h"
 #include <windows.h>
 
 #define BIOME_COUNT 4
@@ -7,6 +8,7 @@
 //Сколько колец надо навернуть для того чтобы появился портал
 #define MAP_LOOP_CONST 3
 #define GOLD_RATE 5
+#define PORTAL_STAMINA_COST 5
 
 enum BIOME_ID {
 	WOODS,
@@ -43,14 +45,18 @@ typedef struct {
 	BiomeStruct biome;
 }MapStruct;
 
+void RandBiome(MapStruct* map);
+
+void FillMap(MapStruct* map);
+
 void GenerateMap(MapStruct* map);
 
 void DeleteMap(MapStruct* map);
 
-void PrintMap(MapStruct* map, DWORD sleep);
+void PrintMap(MapStruct map, DWORD sleep);
 
-void GetRandomCoords(int* ptr_x, int* ptr_y, MapStruct* map);
+void GetRandomCoords(int* ptr_x, int* ptr_y, MapStruct map);
 
-void PrintBottomBar(MapStruct* map, PlayerInstance* Player);
+void PrintBottomBar(MapStruct map, PlayerInstance* Player, HANDLE console);
 
-void Journey(PlayerInstance* ptr_Player, HANDLE console);
+void Journey(PlayerInstance* ptr_Player, HANDLE console, InventoryItems Item_struct[]);

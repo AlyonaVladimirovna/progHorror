@@ -60,6 +60,9 @@ int JourneyKeyboardInput(int* ptr_nextX, int* ptr_nextY) {
 	case UP_Q:
 	case CYRILLIC_LOW_Q:
 	case CYRILLIC_UP_Q: return LOW_Q;
+
+	case LOW_M: return LOW_M;
+
 	default: return 1;
 	};
 }
