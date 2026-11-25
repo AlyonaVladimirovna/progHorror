@@ -1,6 +1,6 @@
 #pragma once
 #include "player.h"
-#include <windows.h>
+#include <curses.h>
 
 
 #define MENU_COUNT 8
@@ -38,15 +38,10 @@ enum INVENTORY_MENU {
 	INVMENU_sell
 };
 
-extern const char* MENU_NAMES[MENU_COUNT];
-
-
-
-
-void TimeMenuHandle(HANDLE console, PlayerInstance* Player);
+void TimeMenuHandle(WINDOW* console, PlayerInstance* Player);
 
 void MenuReturn();
 
-int MenuSelect(HANDLE console, char* names_array[], char* name, int last_menuCase, int menu_count, int padding);
+int MenuSelect(WINDOW* console, char* names_array[], char* name, int last_menuCase, int menu_count, int padding);
 
-void InventoryMenuHandle(HANDLE console, PlayerInstance* Player, const InventoryItems Item_struct[]);
+void InventoryMenuHandle(WINDOW* console, PlayerInstance* Player, const InventoryItems Item_struct[]);

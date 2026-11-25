@@ -1,9 +1,11 @@
 #pragma once
-#include <windows.h>
 #include "inventory.h"
 #include "player.h"
+#include <curses.h>
 
-void ClearConsole(HANDLE console);
+void EraseRefresh();
+
+void W_EraseRefresh(WINDOW* window);
 
 void GenerateDiary(char* character_name, int current_day, int current_hour, const InventoryItems* inventory_array);
 

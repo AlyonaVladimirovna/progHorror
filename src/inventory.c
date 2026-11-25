@@ -1,27 +1,10 @@
 #include "inventory.h"
 #include "consoleinput.h"
 #include <stdio.h>
+#include <curses.h>
 #include <string.h>
 
 
-
-//Массив стандартных названий
-const char* COMMON_INVENTORY_NAMES[MAX_ITEMS] = {
-	[EMPTY] = "Пусто",
-	[WOOD] = "Древесина",
-	[STONE] = "Камень",
-	[SEEDS] = "Семена",
-	[BOTTLE] = "Бутыль с водой",
-	[FLOWER] = "Цветок",
-	[POTATO] = "Картофель",
-	[WHEAT] = "Пшеница",
-	[SHOWEL] = "Лопата",
-	[AXE] = "Топор",
-	[MAP] = "Карта"
-};
-
-
-const int COMMON_INVENTORY_ID[MAX_ITEMS] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 
 //функция сопостовления id и имени
 const char* INVENTORY_nameMatch(int input, const InventoryItems Item_struct[]) {
@@ -46,7 +29,22 @@ int INVENTORY_idMatch(int input, const InventoryItems Item_struct[]) {
 void read_item_names(InventoryItems Item_struct[]) {
 	FILE* itemlist = fopen("files/items.txt", "r");
 	if (itemlist == NULL) {
-		printf("Не удалось открыть files/items.txt, взяты названия по умолчанию\n");
+		printw("Не удалось открыть files/items.txt, взяты названия по умолчанию\n");
+		//Массив стандартных названий
+		const char* COMMON_INVENTORY_NAMES[MAX_ITEMS] = {
+			[EMPTY] = "Пусто",
+			[WOOD] = "Древесина",
+			[STONE] = "Камень",
+			[SEEDS] = "Семена",
+			[BOTTLE] = "Бутыль с водой",
+			[FLOWER] = "Цветок",
+			[POTATO] = "Картофель",
+			[WHEAT] = "Пшеница",
+			[SHOWEL] = "Лопата",
+			[AXE] = "Топор",
+			[MAP] = "Карта"
+		};
+		const int COMMON_INVENTORY_ID[MAX_ITEMS] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 		for (int i = 0; i < MAX_ITEMS; i++) {
 			strcpy_s(Item_struct[i].name, MAX_NAME_LEN, COMMON_INVENTORY_NAMES[i]);
 			Item_struct[i].id = COMMON_INVENTORY_ID[i];
@@ -75,28 +73,28 @@ void inventory_put(InventoryItems inventory_array[], const InventoryItems Item_s
 	);
 	inventory_array[slot_put].id = INVENTORY_idMatch(new_item, Item_struct);
 	inventory_array[slot_put].count = 1;
-	printf("Положили %s в слот %d\n", inventory_array[slot_put].name, slot_put);
+	printw("Положили %s в слот %d\n", inventory_array[slot_put].name, slot_put);
 }
 
 //Функция "Выбросить"
 void inventory_throw(InventoryItems inventory_array[], const InventoryItems Item_struct[], int slot_throw) {
 	if (inventory_array[slot_throw].id != Item_struct[EMPTY].id) {
-		printf("Выбросили %s из слота %d\n", inventory_array[slot_throw].name, slot_throw);
+		printw("Выбросили %s из слота %d\n", inventory_array[slot_throw].name, slot_throw);
 		inventory_array[slot_throw] = Item_struct[EMPTY];
 		inventory_array[slot_throw].count = 0;
 		strcpy_s(inventory_array[slot_throw].name, sizeof(inventory_array[slot_throw].name), Item_struct[EMPTY].name);
 	}
-	else printf("Слот и так пустой.\n");
+	else printw("Слот и так пустой.\n");
 }
 
 // Определенно функциия
 void inventory_weight(const InventoryItems inventory_array[], const InventoryItems Item_struct[], int weight_check) {
-	printf("В этих слотах ID больше: ");
+	printw("В этих слотах ID больше: ");
 	for (int i = 0; i < MAX_ITEMS; i++) {
 		if (weight_check < inventory_array[i].id)
-			printf("[%d] ", i);
+			printw("[%d] ", i);
 	}
-	printf("\n");
+	printw("\n");
 }
 
 // Помните его? это он
@@ -119,16 +117,16 @@ void inventory_search(int searching_ID, char* text_input, const InventoryItems i
 		}
 		if (slot_count < INVENTORY_SLOTS) slots[slot_count++] = -1;
 		if (isInInventory) {
-			printf("Предмет %s есть в слотах: ", text_input);
+			printw("Предмет %s есть в слотах: ", text_input);
 			for (int i = 0; i < INVENTORY_SLOTS; i++) {
-				if (slots[i] != -1) printf("[%d]", slots[i]);
+				if (slots[i] != -1) printw("[%d]", slots[i]);
 				else break;
 			}
-			printf("\n");
+			printw("\n");
 		}
-		else printf("Предмета %s нет в инвентаре.\n", text_input);
+		else printw("Предмета %s нет в инвентаре.\n", text_input);
 	}
-	else printf("Такого предмета нет.\n");
+	else printw("Такого предмета нет.\n");
 }
 
 
@@ -150,21 +148,24 @@ int FindItemSlot(int ID, InventoryItems inventory_array[]) {
 
 int InventorySell(InventoryItems inventory_array[], const InventoryItems Item_struct[]) {
 	for (int i = 0; i < INVENTORY_SLOTS; i++)
-		printf("%d| %s x %d\n", i, inventory_array[i].name, inventory_array[i].count);
+		printw("%d| %s x %d\n", i, inventory_array[i].name, inventory_array[i].count);
 	int SellSlot;
 	while (1) {
-		printf("С какого слота продать?\n");
+		printw("С какого слота продать?\n");
+		refresh();
 		SellSlot = IntInputCheck(0, INVENTORY_SLOTS, "Некорректный ввод!\n");
 		if (inventory_array[SellSlot].id == Item_struct[MAP].id) break;
-		printf("Данный предмет нельзя продать! Ввести снова? (y/n)\n");
+		printw("Данный предмет нельзя продать! Ввести снова? (y/n)\n");
+		refresh();
 		if (YesNoInput()) continue;
 		else return 0;
 	}
-	printf("Сколько продать?  ");
+	printw("Сколько продать?  ");
+	refresh();
 	int quantity;
 	quantity = IntInputCheck(0, inventory_array[SellSlot].count, "Введите число от 0 и не больше количества!\n");
 	int gold = MAP_PRICE * quantity; //Я перепишу это под произвольный предмет честно мамой клянусь
-	printf("Продано: %s в количестве %d за %d золота\n", inventory_array[SellSlot].name, quantity, gold);
+	printw("Продано: %s в количестве %d за %d золота\n", inventory_array[SellSlot].name, quantity, gold);
 	if(inventory_array[SellSlot].count - quantity != 0) {
 		inventory_array[SellSlot].count -= quantity;
 		return gold;

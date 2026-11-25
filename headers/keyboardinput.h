@@ -11,7 +11,7 @@ enum KEYS {
 	LOW_S = 115,
 	LOW_D = 100,
 	LOW_Q = 113,
-	UP_M ='M',
+	UP_M = 77,
 	LOW_M = 109,
 
 	CYRILLIC_LOW_W3 = 134,
@@ -35,6 +35,6 @@ enum KEYS {
 	ENTER = 13,
 };
 
-int MenuKeyboardInput();
+int MenuKeyboardHandler();
 
-int JourneyKeyboardInput(int* ptr_nextX, int* ptr_nextY);
+int JourneyKeyboardHandler(int* ptr_nextX, int* ptr_nextY);

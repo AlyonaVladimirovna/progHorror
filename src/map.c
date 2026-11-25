@@ -52,9 +52,15 @@ void RandBiome(MapStruct* map) {
 	}
 }
 
+void update_areas(WINDOW* map_area, WINDOW* info_area) {
+	wnoutrefresh(map_area);
+	wnoutrefresh(info_area);
+	doupdate();
+}
+
 void FillMap(MapStruct* map) {
 	if (map->biome.id < WOODS || map->biome.id > BIOME_COUNT-1) {
-		printf("Биом не задан!\n"); Sleep(1000); return;
+		printw("Биом не задан!\n"); refresh(); napms(1000); return;
 	}
 
 	if (map->biome.id == SEQUOIA) {
@@ -88,7 +94,7 @@ void FillMap(MapStruct* map) {
 
 
 void GenerateMap(MapStruct* map) {
-	if (map == NULL) { printf("Указатель на MapStruct равен NULL"); return; }
+	if (map == NULL) { printw("Указатель на MapStruct равен NULL"); refresh(); return; }
 	map->size = rand() % 25 + 5;
 	map->map_array = (char**)malloc(map->size * sizeof(char*));
 	for (int i = 0; i < map->size; i++) {
@@ -101,19 +107,20 @@ void GenerateMap(MapStruct* map) {
 void DeleteMap(MapStruct* map) {
 	for (int i = 0; i < map->size; i++) {
 		free(map->map_array[i]);
-		printf("Память по адресу %p освобождена\n", &map->map_array[i]);
-		Sleep(100);
+		wprintw(stdscr, "Память по адресу %p освобождена\n", &map->map_array[i]);
+		wrefresh(stdscr);
+		napms(100);
 	}
 	free(map->map_array);
-	printf("Память по адресу %p освобождена\n", &map->map_array);
+	wprintw(stdscr, "Память по адресу %p освобождена\n", &map->map_array);
+	wrefresh(stdscr);
 }
 
-void PrintMap(MapStruct map, DWORD sleep) {
+void PrintMap(MapStruct map, int sleep, WINDOW* map_area) {
 	for (int i = 0; i < map.size; i++) {
 		for (int j = 0; j < map.size; j++)
-			printf("%c", map.map_array[i][j]);
-		Sleep(sleep);
-		printf("\n");
+			mvwaddch(map_area, i, j, map.map_array[i][j]);
+		wrefresh(map_area);
 	}
 }
 
@@ -124,75 +131,54 @@ void GetRandomCoords(int* ptr_x, int* ptr_y, MapStruct map) {
 	} while (map.map_array[*ptr_y][*ptr_x] == CELL_tree);
 }
 
-void PrintBottomBar(MapStruct map, PlayerInstance Player, HANDLE console) {
-	COORD coords;
-	coords.X = map.size + 3;
-	coords.Y = 0;
-
-	SetConsoleCursorPosition(console, coords);
-	printf("Здоровье: %d/%d", Player.hp, Player.max_hp);
-
-	coords.Y++;
-	SetConsoleCursorPosition(console, coords);
-	printf("Выносливость: %d/%d", Player.stamina, Player.max_stamina);
-
-	coords.Y++;
-	SetConsoleCursorPosition(console, coords);
-	printf("Золото: %d", Player.gold);
-
-	coords.Y++;
-	SetConsoleCursorPosition(console, coords);
-	printf("Время: %d:00", Player.current_hour);
-
-	coords.Y++;
-	SetConsoleCursorPosition(console, coords);
-	printf("Дальность от дома: %d", map.home_range);
-
-	coords.Y++;
-	SetConsoleCursorPosition(console, coords);
-	printf("Биом: %s", map.biome.name);
-
-	coords.Y += 2;
-	SetConsoleCursorPosition(console, coords);
-	printf("M - Записать карту");
-
-	coords.Y++;
-	SetConsoleCursorPosition(console, coords);
-	printf("Q - Выход у костра (^)");
-	coords.Y++;
-	SetConsoleCursorPosition(console, coords);
+void PrintBottomBar(MapStruct map, PlayerInstance Player, WINDOW* info_area, int isMapSaved) {	
+	W_EraseRefresh(info_area);
+	wprintw(info_area, "Здоровье: %d/%d\nВыносливость: %d/%d\nЗолото: %d\nВремя: %d:00\nДальность от дома: %d\nБиом: %s\n", \
+		Player.hp, Player.max_hp, Player.stamina, Player.max_stamina, Player.gold, Player.current_hour, map.home_range, map.biome.name);
+	if(isMapSaved) wprintw(info_area, "Карта записана!\n");
+	else wprintw(info_area, "M - Записать карту\n");
+	wprintw(info_area, "Q - Выход у костра (^)");
 }
 
 
-void Journey(PlayerInstance* ptr_Player, HANDLE console, const InventoryItems Item_struct[]) {
-	if (ptr_Player == NULL) { printf("Указатель на PlayerInstance равен NULL"); return; }
-	COORD buffer = { 120, 50 };
-	SetConsoleScreenBufferSize(console, buffer);
+void Journey(PlayerInstance* ptr_Player, const InventoryItems Item_struct[]) {
+	if (ptr_Player == NULL) { printw("Указатель на PlayerInstance равен NULL"); return; }
+	nodelay(stdscr, TRUE);
 	MapStruct map;
 	GenerateMap(&map);
-	if (&map == NULL) { printf("Указатель на MapStruct равен NULL"); return; }
+	if (&map == NULL) { printw("Указатель на MapStruct равен NULL"); return; }
+
+	WINDOW* info_area = newwin(INFO_AREA_Y_SIZE, INFO_AREA_X_SIZE, 0, map.size + 3);
+	WINDOW* map_area = newwin(map.size, map.size, 0, 0);
 	map.isMapWithPortal = 0;
 	map.loop_count = 0;
 	map.home_range = 0;
 	int next_x, next_y, key;
 	int isMapSavedForLoop = 0;
 	GetRandomCoords(&next_x, &next_y, map);
-	ptr_Player->PlayerCoord.X = next_x;
-	ptr_Player->PlayerCoord.Y = next_y;
-	PrintMap(map, 50);
-	PrintBottomBar(map, *ptr_Player, console);
-	SetConsoleCursorPosition(console, ptr_Player->PlayerCoord);
-	printf("%c", CELL_player);
-	while (!((key = JourneyKeyboardInput(&next_x, &next_y) )== LOW_Q && map.map_array[ptr_Player->PlayerCoord.Y][ptr_Player->PlayerCoord.X] == CELL_campfire)) {
-		if (ptr_Player->stamina == 0 || ptr_Player->current_hour == 2) {
-			ClearConsole(console);
+	ptr_Player->coordX = next_x;
+	ptr_Player->coordY = next_y;
+
+	PrintMap(map, 50, map_area);
+	PrintBottomBar(map, *ptr_Player, info_area, isMapSavedForLoop);
+	mvwprintw(map_area, ptr_Player->coordY, ptr_Player->coordX, "%c", CELL_player);
+	update_areas(map_area, info_area);
+	while (!((key = JourneyKeyboardHandler(&next_x, &next_y) )== LOW_Q && map.map_array[ptr_Player->coordY][ptr_Player->coordX] == CELL_campfire)) {
+
+		if (ptr_Player->stamina <= 0 || ptr_Player->current_hour == 2) {
+			delwin(map_area);
+			delwin(info_area);
+			EraseRefresh();
 			ptr_Player->gold = ptr_Player->gold / 2;
-			printf("Вы упали в обморок! Вас спасли, но забрали половину золота (%d)\n", ptr_Player->gold);
+			printw("Вы упали в обморок! Вас спасли, но забрали половину золота (%d)\n", ptr_Player->gold);
 			ptr_Player->stamina = ptr_Player->max_stamina;
 			ptr_Player->hp = ptr_Player->max_hp;
 			DeleteMap(&map);
 			return;
 		}
+
+
+		if (key == NULL) { wrefresh(map_area); napms(50); continue; } //!!!ВЕСЬ РЕНДЕР ВЫШЕ!!!
 
 		if (next_y < 0) { next_y = map.size - 1; map.loop_count++; }
 		else if (next_y > map.size - 1) {
@@ -203,17 +189,18 @@ void Journey(PlayerInstance* ptr_Player, HANDLE console, const InventoryItems It
 		}
 		else if (next_x < 0) { next_x = map.size - 1; map.loop_count++; }
 		if (map.map_array[next_y][next_x] == CELL_tree) {
-			next_x = ptr_Player->PlayerCoord.X;
-			next_y = ptr_Player->PlayerCoord.Y;
+			next_x = ptr_Player->coordX;
+			next_y = ptr_Player->coordY;
 			continue;
 		}
 		if (map.loop_count > MAP_LOOP_CONST && !map.isMapWithPortal) {
 			int randX, randY;
 			GetRandomCoords(&randX, &randY, map);
 			map.map_array[randY][randX] = CELL_portal;
-			ClearConsole(console);
-			PrintMap(map, 0);
-			PrintBottomBar(map, *ptr_Player, console);
+			W_EraseRefresh(map_area);
+			PrintMap(map, 0, map_area);
+			PrintBottomBar(map, *ptr_Player, info_area, isMapSavedForLoop);
+			update_areas(map_area, info_area);
 			map.isMapWithPortal = 1;
 		}
 		if (map.map_array[next_y][next_x] == CELL_portal) {
@@ -222,37 +209,41 @@ void Journey(PlayerInstance* ptr_Player, HANDLE console, const InventoryItems It
 			ptr_Player->stamina -= PORTAL_STAMINA_COST;
 			ptr_Player->current_hour += 1;
 			ptr_Player->gold += GOLD_RATE * map.home_range * map.biome.gold_rate;
-			ClearConsole(console);
+			W_EraseRefresh(map_area);
+			W_EraseRefresh(info_area);
 			DeleteMap(&map);
-			printf("Создание новой карты");
+			wprintw(stdscr, "Создание новой карты"); wrefresh(stdscr);
 			for (int i = 0; i < 4; i++) {
 				Sleep(500);
-				printf(".");
+				wprintw(stdscr, "."); wrefresh(stdscr);
 			}
-			ClearConsole(console);
+			W_EraseRefresh(stdscr);
+			delwin(map_area);
+			delwin(info_area);
 			GenerateMap(&map);
 			map.loop_count = 0;
 			map.isMapWithPortal = 0;
 			GetRandomCoords(&next_x, &next_y, map);
-			ptr_Player->PlayerCoord.X = next_x;
-			ptr_Player->PlayerCoord.Y = next_y;
-			PrintMap(map, 50);
-			PrintBottomBar(map, *ptr_Player, console);
-			SetConsoleCursorPosition(console, ptr_Player->PlayerCoord);
-			printf("%c", CELL_player);
+			ptr_Player->coordX = next_x;
+			ptr_Player->coordY = next_y;
+			info_area = newwin(INFO_AREA_Y_SIZE, INFO_AREA_X_SIZE, 0, map.size + 3);
+			map_area = newwin(map.size, map.size, 0, 0);
+			PrintMap(map, 50, map_area); 
+			PrintBottomBar(map, *ptr_Player, info_area, isMapSavedForLoop); 
+			mvwprintw(map_area, ptr_Player->coordY, ptr_Player->coordX, "%c", CELL_player);
+			update_areas(map_area, info_area);
 			continue;
 		}
-
 		if(key == LOW_M) {
-			PrintBottomBar(map, *ptr_Player, console);
-			if (isMapSavedForLoop) printf("Вы уже записали карту для данной местности\n");
+			PrintBottomBar(map, *ptr_Player, info_area, isMapSavedForLoop);
+			if (isMapSavedForLoop) mvwprintw(info_area, 8, 0, "Вы уже записали карту для данной местности\n");
 			else {
 				isMapSavedForLoop = 1;
 				int map_slot = FindItemSlot(Item_struct[MAP].id, ptr_Player->inventory);
 				if (map_slot == -1) {
 					map_slot = FindEmptySlot(ptr_Player->inventory, Item_struct);
 					if ( map_slot == -1) {
-						printf("Нет места в инвентаре!");
+						mvwprintw(info_area, 8, 0, "Нет места в инвентаре!");
 					}
 					else {
 						ptr_Player->inventory[map_slot] = Item_struct[MAP];
@@ -260,24 +251,28 @@ void Journey(PlayerInstance* ptr_Player, HANDLE console, const InventoryItems It
 						
 					}
 				}
-				else ptr_Player->inventory[map_slot].count += 1;
-				printf("Карта записана!\n");
+				else { ptr_Player->inventory[map_slot].count += 1; }
+				wrefresh(info_area);
+				continue;
 			}
 		}
-
-		SetConsoleCursorPosition(console, ptr_Player->PlayerCoord);
-		printf("%c", map.map_array[ptr_Player->PlayerCoord.Y][ptr_Player->PlayerCoord.X]);
-		ptr_Player->PlayerCoord.X = next_x;
-		ptr_Player->PlayerCoord.Y = next_y;
-		SetConsoleCursorPosition(console, ptr_Player->PlayerCoord);
-		printf("%c", CELL_player);
-		ptr_Player->stamina -= 1 * map.biome.stamina_rate;
-		PrintBottomBar(map, *ptr_Player, console);
-
+		if (key != NULL) {
+			mvwprintw(map_area, ptr_Player->coordY, ptr_Player->coordX, "%c", map.map_array[ptr_Player->coordY][ptr_Player->coordX]);
+			ptr_Player->coordX = next_x;
+			ptr_Player->coordY = next_y;
+			mvwprintw(map_area, ptr_Player->coordY, ptr_Player->coordX, "%c", CELL_player);
+			ptr_Player->stamina -= 1 * map.biome.stamina_rate;
+			PrintBottomBar(map, *ptr_Player, info_area, isMapSavedForLoop);
+			update_areas(map_area, info_area);
+		}
+		napms(50);
 	}
-	ClearConsole(console);
+	EraseRefresh();
+	delwin(map_area);
+	delwin(info_area);
+	nodelay(stdscr, FALSE);
 	DeleteMap(&map);
-	printf("Прикючение закончено!\n");
+	printw("Прикючение закончено!\n");
 
 }
 

@@ -12,7 +12,7 @@
 
 typedef struct {
 	char name[MAX_PLAYER_NAME];
-	COORD PlayerCoord;
+	int coordX, coordY;
 	InventoryItems inventory[INVENTORY_SLOTS];
 	int hp, max_hp;
 	int stamina, max_stamina;

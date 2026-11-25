@@ -1,13 +1,15 @@
 #include "player.h"
 #include <stdio.h>
+#include <curses.h>
 
 PlayerInstance* CreatePlayer(InventoryItems Item_struct[], int doRandInventory) {
 	PlayerInstance* Player = malloc(sizeof(PlayerInstance));
 	if (Player == NULL) {
-		printf("Не удалось создать персонажа\n");
-		return;
+		printw("Не выделить память\n");
+		return NULL;
 	}
-	printf("Введите имя: ");
+	printw("Введите имя: ");
+	refresh();
 	TextInput(Player->name, MAX_PLAYER_NAME);
 	Player->hp = MAX_PLAYER_HP;
 	Player->max_hp =  MAX_PLAYER_HP;
@@ -34,14 +36,15 @@ PlayerInstance* CreatePlayer(InventoryItems Item_struct[], int doRandInventory) 
 }
 
 void PrintPlayerCard(PlayerInstance* ptr_player) {
-	if (&ptr_player == NULL) { printf("Указатель на PlayerInstance равен NULL.\n"); return; }
-	printf("Имя: %s\nЗдоровье: %d/%d\nВыносливость: %d/%d\nЗолото: %d\nВремя: День %d, %d:00\n", ptr_player->name, ptr_player->hp, ptr_player->max_hp, \
+	if (&ptr_player == NULL) { printw("Указатель на PlayerInstance равен NULL.\n"); return; }
+	printw("Имя: %s\nЗдоровье: %d/%d\nВыносливость: %d/%d\nЗолото: %d\nВремя: День %d, %d:00\n", ptr_player->name, ptr_player->hp, ptr_player->max_hp, \
 		ptr_player->stamina, ptr_player->max_stamina, ptr_player->gold, ptr_player->current_day, ptr_player->current_hour);
 	for (int i = 0; i < INVENTORY_SLOTS; i++) {
-		printf("[%d| %-s x%d] ", i+1, ptr_player->inventory[i].name, ptr_player->inventory[i].count);
-		if (i == (INVENTORY_SLOTS / 2)-1) printf("\n");
+		printw("[%d| %-s x%d] ", i+1, ptr_player->inventory[i].name, ptr_player->inventory[i].count);
+		if (i == (INVENTORY_SLOTS / 2)-1) printw("\n");
 	}
 		
-	printf("\n");
+	printw("\n");
+	refresh();
 }
 

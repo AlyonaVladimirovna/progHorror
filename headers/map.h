@@ -1,7 +1,8 @@
 #pragma once
 #include "player.h"
 #include "inventory.h"
-#include <windows.h>
+#include <curses.h>
+//#include <windows.h>
 
 #define BIOME_COUNT 4
 #define BIOME_NAME_LEN 64
@@ -9,6 +10,9 @@
 #define MAP_LOOP_CONST 3
 #define GOLD_RATE 5
 #define PORTAL_STAMINA_COST 5
+#define INFO_AREA_Y_SIZE 10
+#define INFO_AREA_X_SIZE 30
+
 
 enum BIOME_ID {
 	WOODS,
@@ -47,16 +51,18 @@ typedef struct {
 
 void RandBiome(MapStruct* map);
 
+void update_areas(WINDOW* map_area, WINDOW* info_area);
+
 void FillMap(MapStruct* map);
 
 void GenerateMap(MapStruct* map);
 
 void DeleteMap(MapStruct* map);
 
-void PrintMap(MapStruct map, DWORD sleep);
+void PrintMap(MapStruct map, int sleep);
 
 void GetRandomCoords(int* ptr_x, int* ptr_y, MapStruct map);
 
-void PrintBottomBar(MapStruct map, PlayerInstance* Player, HANDLE console);
+void PrintBottomBar(MapStruct map, PlayerInstance* Player);
 
-void Journey(PlayerInstance* ptr_Player, HANDLE console, InventoryItems Item_struct[]);
+void Journey(PlayerInstance* ptr_Player, InventoryItems Item_struct[]);

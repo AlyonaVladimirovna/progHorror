@@ -1,34 +1,35 @@
 #include "keyboardinput.h"
-#include <conio.h>
+#include <curses.h>
 
-int MenuKeyboardInput() {
-	int key = _getch();
-	if (key == SPEC_PREFIX) key = _getch();
-	else if (key == CYRILLIC_PREFIX1 || key == CYRILLIC_PREFIX2) key = _getch();
+int MenuKeyboardHandler() {
+	int key = getch();
+	if (key == ERR) return NULL;
 
 	switch (key) {
-	case ARROW_DOWN:
+	case KEY_DOWN:
 	case CYRILLIC_LOW_S3:
 	case CYRILLIC_UP_S2:
 	case LOW_S:
 	case UP_S: return 1;
 
-	case ARROW_UP:
+	case KEY_UP:
 	case CYRILLIC_LOW_W3:
 	case CYRILLIC_UP_W2:
 	case LOW_W:
 	case UP_W: return -1;
 
-	case ENTER: return ENTER;
+	case KEY_ENTER:
+	case '\n':
+	case '\r': return ENTER;
 	default: return 0;
 	}
 }
 
 
-int JourneyKeyboardInput(int* ptr_nextX, int* ptr_nextY) {
-	int key = _getch();
-	if (key == SPEC_PREFIX) key = _getch();
-	else if (key == CYRILLIC_PREFIX1 || key == CYRILLIC_PREFIX2) key = _getch();
+
+int JourneyKeyboardHandler(int* ptr_nextX, int* ptr_nextY) {
+	int key = getch();
+	if (key == ERR) return NULL;
 
 	switch (key) {
 	case ARROW_DOWN:

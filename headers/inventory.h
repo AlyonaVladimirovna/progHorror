@@ -29,9 +29,6 @@ enum ITEMSTRUCT_ORD {
 	MAP
 };
 
-extern const char* COMMON_INVENTORY_NAMES[MAX_ITEMS];
-extern const int COMMON_INVENTORY_ID[MAX_ITEMS];
-
 //функция сопостовления id и имени
 const char* INVENTORY_nameMatch(int input, const InventoryItems nameid[]);
 
