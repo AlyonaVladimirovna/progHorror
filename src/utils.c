@@ -15,14 +15,14 @@ void W_EraseRefresh(WINDOW* window) {
 }
 
 
-void GenerateDiary(char* character_name, int current_day, int current_hour, const InventoryItems* inventory_array) {
+void GenerateDiary(char* character_name, int current_day, int current_hour, const ItemStack* inventory_array, const ItemsDict Item_struct[]) {
 	FILE* diary = fopen("files/diary.txt", "a");
 	if (diary == NULL) { printw("Не удалось открыть файл дневника\n");MenuReturn(); return; }
 	fprintf(diary, "Имя: %s\nВремя: День %d, %d:00\nИнвентарь: ", character_name, current_day, current_hour);
 	printw("Имя: %s\nВремя: День %d, %d:00\nИнвентарь: ", character_name, current_day, current_hour);
 	for (int i = 0; i < MAX_ITEMS; i++) {
-		fprintf(diary, "[%s]", inventory_array[i].name);
-		printw("[%s]", inventory_array[i].name);
+		fprintf(diary, "[%s]", INVENTORY_nameMatch(inventory_array[i].id, Item_struct));
+		printw("[%s]", INVENTORY_nameMatch(inventory_array[i].id, Item_struct));
 	}
 	printw("\n"); refresh();
 	fprintf(diary, "\n___\n");

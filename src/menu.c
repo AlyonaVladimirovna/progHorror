@@ -79,7 +79,7 @@ void TimeMenuHandle(WINDOW* console, PlayerInstance* Player) {
 	}
 }
 
-void InventoryMenuHandle(WINDOW* console, PlayerInstance* Player, const InventoryItems Item_struct[]) {
+void InventoryMenuHandle(WINDOW* console, PlayerInstance* Player, const ItemsDict Item_struct[]) {
 	if (Player == NULL) { printw("Указатель на PlayerInstance равен NULL\n"); return; }
 
 	const char* INVENTORY_MENU_NAMES[INVENTORY_MENU_COUNT] = {
@@ -101,7 +101,7 @@ void InventoryMenuHandle(WINDOW* console, PlayerInstance* Player, const Inventor
 		case INVMENU_show: 
 			EraseRefresh();
 			for (int i = 0; i < INVENTORY_SLOTS; i++)
-				printw("%d| %s x %d\n", Player->inventory[i].id, Player->inventory[i].name, Player->inventory[i].count);
+				printw("%d| %s x %d\n", Player->inventory[i].id, INVENTORY_nameMatch(Player->inventory[i].id, Item_struct), Player->inventory[i].count);
 			MenuReturn();
 			break;
 
@@ -133,7 +133,7 @@ void InventoryMenuHandle(WINDOW* console, PlayerInstance* Player, const Inventor
 			printw("Введите ID предмета\n");
 			if (Player == NULL) { printw("Сначала создайте персонажа!\n"); break; }
 			int weight_check = IntInputCheck(Item_struct[1].id, Item_struct[MAX_ITEMS - 1].id, "Нет такого предмета");
-			inventory_weight(Player->inventory, Item_struct, weight_check);
+			inventory_weight(Player->inventory, weight_check);
 			MenuReturn();
 			break;
 
@@ -143,7 +143,7 @@ void InventoryMenuHandle(WINDOW* console, PlayerInstance* Player, const Inventor
 			printw("Введите название: ");
 			char text_input[MAX_NAME_LEN];
 			TextInput(&text_input, MAX_NAME_LEN);
-			int searching_ID = ID_Search(text_input, Item_struct);
+			int searching_ID = ID_Search(text_input,Player->inventory, Item_struct);
 			inventory_search(searching_ID, text_input, Player->inventory, Item_struct);
 			MenuReturn();
 			break;

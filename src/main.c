@@ -22,7 +22,7 @@ int main() {
 
 	setlocale(LC_ALL, ".UTF-8");
 
-	InventoryItems Item_struct[MAX_ITEMS];
+	ItemsDict Item_struct[MAX_ITEMS];
 	read_item_names(Item_struct);
 
 	PlayerInstance* Player = NULL;
@@ -77,9 +77,9 @@ int main() {
 			break;
 
 		case MENU_PlayerCard:
-			EraseRefresh();
+			EraseRefresh();	
 			if (Player == NULL) { printw("Сначала создайте персонажа!\n"); MenuReturn(); break; }
-			PrintPlayerCard(Player);
+			PrintPlayerCard(Player, Item_struct);
 			MenuReturn();
 			break;
 

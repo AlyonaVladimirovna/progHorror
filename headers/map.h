@@ -65,4 +65,4 @@ void GetRandomCoords(int* ptr_x, int* ptr_y, MapStruct map);
 
 void PrintBottomBar(MapStruct map, PlayerInstance* Player);
 
-void Journey(PlayerInstance* ptr_Player, InventoryItems Item_struct[]);
+void Journey(PlayerInstance* ptr_Player, ItemsDict Item_struct[]);

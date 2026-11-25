@@ -141,7 +141,7 @@ void PrintBottomBar(MapStruct map, PlayerInstance Player, WINDOW* info_area, int
 }
 
 
-void Journey(PlayerInstance* ptr_Player, const InventoryItems Item_struct[]) {
+void Journey(PlayerInstance* ptr_Player, const ItemsDict Item_struct[]) {
 	if (ptr_Player == NULL) { printw("Указатель на PlayerInstance равен NULL"); return; }
 	nodelay(stdscr, TRUE);
 	MapStruct map;
@@ -238,7 +238,7 @@ void Journey(PlayerInstance* ptr_Player, const InventoryItems Item_struct[]) {
 			PrintBottomBar(map, *ptr_Player, info_area, isMapSavedForLoop);
 			if (isMapSavedForLoop) mvwprintw(info_area, 8, 0, "Вы уже записали карту для данной местности\n");
 			else {
-				isMapSavedForLoop = 1;
+				
 				int map_slot = FindItemSlot(Item_struct[MAP].id, ptr_Player->inventory);
 				if (map_slot == -1) {
 					map_slot = FindEmptySlot(ptr_Player->inventory, Item_struct);
@@ -246,12 +246,13 @@ void Journey(PlayerInstance* ptr_Player, const InventoryItems Item_struct[]) {
 						mvwprintw(info_area, 8, 0, "Нет места в инвентаре!");
 					}
 					else {
-						ptr_Player->inventory[map_slot] = Item_struct[MAP];
+						ptr_Player->inventory[map_slot].id = Item_struct[MAP].id;
 						ptr_Player->inventory[map_slot].count += 1;
+						isMapSavedForLoop = 1;
 						
 					}
 				}
-				else { ptr_Player->inventory[map_slot].count += 1; }
+				else { ptr_Player->inventory[map_slot].count += 1; isMapSavedForLoop = 1;}
 				wrefresh(info_area);
 				continue;
 			}

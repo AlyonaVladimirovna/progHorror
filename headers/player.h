@@ -13,7 +13,7 @@
 typedef struct {
 	char name[MAX_PLAYER_NAME];
 	int coordX, coordY;
-	InventoryItems inventory[INVENTORY_SLOTS];
+	ItemStack inventory[INVENTORY_SLOTS];
 	int hp, max_hp;
 	int stamina, max_stamina;
 	int gold;
@@ -21,6 +21,6 @@ typedef struct {
 	int current_hour;
 }PlayerInstance;
 
-PlayerInstance* CreatePlayer(InventoryItems Item_struct[], int DoRandInventory);
+PlayerInstance* CreatePlayer(ItemsDict Item_struct[], int DoRandInventory);
 
-void PrintPlayerCard(PlayerInstance* ptr_player);
+void PrintPlayerCard(PlayerInstance* ptr_player, ItemsDict Item_struct[]);

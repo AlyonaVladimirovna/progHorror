@@ -44,4 +44,4 @@ void MenuReturn();
 
 int MenuSelect(WINDOW* console, char* names_array[], char* name, int last_menuCase, int menu_count, int padding);
 
-void InventoryMenuHandle(WINDOW* console, PlayerInstance* Player, const InventoryItems Item_struct[]);
+void InventoryMenuHandle(WINDOW* console, PlayerInstance* Player, const ItemsDict Item_struct[]);
